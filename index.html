@@ -1,0 +1,3333 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bybit P2P & Arbitrage Pro Simulator</title>
+<style>
+  :root {
+    --bg-primary: #0b0e11;
+    --bg-secondary: #12161c;
+    --bg-card: #181d26;
+    --bg-card-hover: #1f2530;
+    --bg-input: #0f1318;
+    --border-color: #262d3a;
+    --border-highlight: #3a4458;
+    --accent-yellow: #f7a600;
+    --accent-yellow-hover: #ffb829;
+    --accent-yellow-dim: rgba(247, 166, 0, 0.14);
+    --green: #0ecb81;
+    --green-dim: rgba(14, 203, 129, 0.14);
+    --red: #f6465d;
+    --red-dim: rgba(246, 70, 93, 0.14);
+    --blue: #3b82f6;
+    --blue-dim: rgba(59, 130, 246, 0.15);
+    --text-primary: #eaecef;
+    --text-secondary: #848e9c;
+    --text-muted: #5e6673;
+    --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+    --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.55);
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg-primary); }
+  ::-webkit-scrollbar-thumb { background: var(--border-highlight); border-radius: 3px; }
+
+  /* Header / Navbar */
+  header {
+    background-color: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+    padding: 0 20px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    gap: 12px;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 800;
+    font-size: 19px;
+    letter-spacing: -0.3px;
+    white-space: nowrap;
+  }
+
+  .brand-logo {
+    color: var(--text-primary);
+  }
+  .brand-logo span {
+    color: var(--accent-yellow);
+  }
+  .brand-badge {
+    background: var(--accent-yellow-dim);
+    color: var(--accent-yellow);
+    border: 1px solid rgba(247, 166, 0, 0.35);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 4px;
+    text-transform: uppercase;
+  }
+
+  .nav-tabs {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .nav-tabs::-webkit-scrollbar { display: none; }
+
+  .nav-tab {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    padding: 8px 13px;
+    border-radius: var(--radius-sm);
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    position: relative;
+  }
+
+  .nav-tab:hover {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  .nav-tab.active {
+    color: var(--accent-yellow);
+    background: var(--accent-yellow-dim);
+  }
+
+  .nav-badge {
+    background: var(--red);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 10px;
+    min-width: 17px;
+    text-align: center;
+  }
+
+  .header-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    white-space: nowrap;
+  }
+
+  /* Mentor Switch */
+  .mentor-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    padding: 5px 10px;
+    border-radius: 20px;
+    cursor: pointer;
+    user-select: none;
+    transition: border-color 0.2s;
+  }
+  .mentor-toggle.active {
+    border-color: var(--accent-yellow);
+    background: var(--accent-yellow-dim);
+  }
+  .mentor-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--text-muted);
+  }
+  .mentor-toggle.active .mentor-dot {
+    background: var(--accent-yellow);
+    box-shadow: 0 0 8px var(--accent-yellow);
+  }
+  .mentor-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .status-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    padding: 5px 10px;
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+  }
+
+  /* Quest & Mentor Banner */
+  .top-ribbon {
+    background: linear-gradient(90deg, #161b24 0%, #1d2330 100%);
+    border-bottom: 1px solid var(--border-color);
+    padding: 8px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    font-size: 12.5px;
+  }
+
+  .quest-tracker {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .quest-tag {
+    background: var(--accent-yellow);
+    color: #000;
+    font-weight: 800;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-size: 11px;
+  }
+
+  .net-worth-bar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+  }
+
+  .nw-item span {
+    color: var(--text-secondary);
+    font-family: var(--font-sans);
+    margin-right: 4px;
+  }
+
+  /* Main Container */
+  main {
+    flex: 1;
+    max-width: 1380px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 20px;
+  }
+
+  .view-section {
+    display: none;
+    animation: fadeIn 0.2s ease;
+  }
+  .view-section.active {
+    display: block;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Cards & Layout Utilities */
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 18px;
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border-color);
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .card-title {
+    font-size: 16px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+  }
+
+  .grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+
+  .grid-sidebar {
+    display: grid;
+    grid-template-columns: 1fr 360px;
+    gap: 18px;
+    align-items: start;
+  }
+
+  /* Mentor Hint Inline Box */
+  .mentor-box {
+    background: rgba(247, 166, 0, 0.08);
+    border: 1px dashed rgba(247, 166, 0, 0.45);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    margin-bottom: 14px;
+    font-size: 13px;
+    color: #f3d08a;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  body.mentor-off .mentor-box,
+  body.mentor-off .mentor-inline-tip {
+    display: none !important;
+  }
+
+  .mentor-term {
+    border-bottom: 1px dotted var(--accent-yellow);
+    cursor: help;
+    position: relative;
+    display: inline-block;
+  }
+  body.mentor-off .mentor-term {
+    border-bottom: none;
+    cursor: default;
+  }
+
+  /* Filter Toolbar in P2P Book */
+  .p2p-toolbar {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 14px 18px;
+    margin-bottom: 16px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+  }
+
+  .side-switcher {
+    display: inline-flex;
+    background: var(--bg-input);
+    padding: 3px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-color);
+  }
+
+  .side-btn {
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    padding: 7px 20px;
+    font-weight: 700;
+    font-size: 13.5px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: 0.15s;
+  }
+  .side-btn.buy.active {
+    background: var(--green);
+    color: #000;
+  }
+  .side-btn.sell.active {
+    background: var(--red);
+    color: #fff;
+  }
+
+  .coin-pills {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .coin-pill {
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    padding: 6px 14px;
+    border-radius: var(--radius-sm);
+    font-weight: 700;
+    font-size: 13px;
+    cursor: pointer;
+    transition: 0.15s;
+  }
+  .coin-pill.active {
+    border-color: var(--accent-yellow);
+    color: var(--accent-yellow);
+    background: var(--accent-yellow-dim);
+  }
+
+  .filter-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  input, select, textarea {
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    font-size: 13.5px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--accent-yellow);
+  }
+
+  /* Buttons */
+  .btn {
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 8px 16px;
+    font-weight: 700;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+  .btn-yellow {
+    background: var(--accent-yellow);
+    color: #000;
+  }
+  .btn-yellow:hover:not(:disabled) {
+    background: var(--accent-yellow-hover);
+  }
+  .btn-green {
+    background: var(--green);
+    color: #000;
+  }
+  .btn-green:hover:not(:disabled) {
+    filter: brightness(1.08);
+  }
+  .btn-red {
+    background: var(--red);
+    color: #fff;
+  }
+  .btn-red:hover:not(:disabled) {
+    filter: brightness(1.08);
+  }
+  .btn-ghost {
+    background: var(--bg-input);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+  }
+  .btn-ghost:hover:not(:disabled) {
+    border-color: var(--border-highlight);
+    background: var(--bg-card-hover);
+  }
+  .btn-sm {
+    padding: 5px 10px;
+    font-size: 12px;
+  }
+
+  /* Order Book Table */
+  .book-table-wrap {
+    overflow-x: auto;
+  }
+
+  table.p2p-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 820px;
+  }
+
+  table.p2p-table th {
+    text-align: left;
+    padding: 11px 14px;
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: 12px;
+    border-bottom: 1px solid var(--border-color);
+    background: rgba(0, 0, 0, 0.2);
+  }
+
+  table.p2p-table td {
+    padding: 14px;
+    border-bottom: 1px solid var(--border-color);
+    vertical-align: middle;
+  }
+
+  table.p2p-table tr:hover td {
+    background: var(--bg-card-hover);
+  }
+
+  table.p2p-table tr.ad-anomaly td {
+    background: rgba(14, 203, 129, 0.05);
+  }
+  table.p2p-table tr.ad-trap td {
+    background: rgba(246, 70, 93, 0.04);
+  }
+
+  .merchant-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .merchant-name-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 700;
+    font-size: 14px;
+  }
+  .avatar-circle {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--accent-yellow-dim);
+    color: var(--accent-yellow);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 800;
+  }
+  .badge-verified {
+    color: var(--accent-yellow);
+    font-size: 13px;
+    title: "Проверенный мерчант";
+  }
+  .badge-tag {
+    font-size: 10.5px;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-weight: 700;
+  }
+  .tag-hot { background: var(--green-dim); color: var(--green); }
+  .tag-warn { background: var(--red-dim); color: var(--red); }
+
+  .merchant-stats {
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+  .stat-good { color: var(--green); font-weight: 600; }
+  .stat-bad { color: var(--red); font-weight: 600; }
+
+  .price-cell {
+    font-family: var(--font-mono);
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--text-primary);
+  }
+  .price-cell small {
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+
+  .limits-cell {
+    font-size: 12.5px;
+    line-height: 1.6;
+  }
+  .limits-cell span {
+    color: var(--text-secondary);
+    display: inline-block;
+    width: 68px;
+  }
+
+  .pm-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+  .pm-badge {
+    font-size: 11.5px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-weight: 600;
+  }
+  .pm-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+  }
+
+  /* Active Order & Chat View */
+  .order-layout {
+    display: grid;
+    grid-template-columns: 1fr 410px;
+    gap: 18px;
+  }
+
+  .escrow-banner {
+    background: linear-gradient(90deg, rgba(14, 203, 129, 0.12), rgba(59, 130, 246, 0.1));
+    border: 1px solid rgba(14, 203, 129, 0.35);
+    border-radius: var(--radius-md);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .timer-box {
+    background: var(--bg-input);
+    border: 1px solid var(--border-highlight);
+    padding: 6px 12px;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-mono);
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--accent-yellow);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .speed-btns {
+    display: inline-flex;
+    gap: 3px;
+  }
+  .speed-btn {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    cursor: pointer;
+  }
+  .speed-btn.active {
+    background: var(--accent-yellow);
+    color: #000;
+    font-weight: 700;
+    border-color: var(--accent-yellow);
+  }
+
+  .order-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    background: var(--bg-input);
+    padding: 14px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-color);
+    margin-bottom: 16px;
+  }
+  .os-item label {
+    display: block;
+    font-size: 11.5px;
+    color: var(--text-secondary);
+    margin-bottom: 3px;
+  }
+  .os-item .val {
+    font-family: var(--font-mono);
+    font-size: 16px;
+    font-weight: 700;
+  }
+
+  .requisites-card {
+    background: var(--bg-input);
+    border: 1px solid var(--border-highlight);
+    border-radius: var(--radius-sm);
+    padding: 14px;
+    margin-bottom: 16px;
+  }
+
+  .receipt-verification-box {
+    background: rgba(59, 130, 246, 0.08);
+    border: 1px solid rgba(59, 130, 246, 0.35);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+    margin-top: 12px;
+  }
+
+  .action-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border-color);
+  }
+
+  /* Chat Window */
+  .chat-container {
+    display: flex;
+    flex-direction: column;
+    height: 560px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+  }
+
+  .chat-header {
+    padding: 12px 16px;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .chat-messages {
+    flex: 1;
+    padding: 14px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: #0d1015;
+  }
+
+  .msg {
+    max-width: 84%;
+    padding: 9px 13px;
+    border-radius: 10px;
+    font-size: 13px;
+    line-height: 1.45;
+    position: relative;
+    word-wrap: break-word;
+  }
+  .msg.system {
+    align-self: center;
+    max-width: 94%;
+    background: rgba(247, 166, 0, 0.1);
+    border: 1px solid rgba(247, 166, 0, 0.28);
+    color: #e5c687;
+    font-size: 12px;
+    text-align: center;
+  }
+  .msg.counterparty {
+    align-self: flex-start;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    border-bottom-left-radius: 2px;
+  }
+  .msg.me {
+    align-self: flex-end;
+    background: #233044;
+    border: 1px solid #334766;
+    color: #fff;
+    border-bottom-right-radius: 2px;
+  }
+  .msg-time {
+    font-size: 10px;
+    color: var(--text-secondary);
+    margin-top: 4px;
+    display: block;
+    text-align: right;
+  }
+
+  .fake-receipt-card {
+    background: #1a222d;
+    border: 1px dashed var(--accent-yellow);
+    border-radius: 6px;
+    padding: 8px 10px;
+    margin-top: 6px;
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+  }
+
+  .quick-replies {
+    padding: 8px 12px;
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+  }
+  .qr-chip {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    padding: 4px 9px;
+    border-radius: 12px;
+    font-size: 11.5px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .qr-chip:hover {
+    border-color: var(--accent-yellow);
+    color: var(--text-primary);
+  }
+
+  .chat-input-row {
+    display: flex;
+    padding: 10px;
+    gap: 8px;
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border-color);
+  }
+  .chat-input-row input {
+    flex: 1;
+  }
+
+  /* Forms & Calculators */
+  .form-group {
+    margin-bottom: 13px;
+  }
+  .form-group label {
+    display: block;
+    font-size: 12.5px;
+    color: var(--text-secondary);
+    margin-bottom: 5px;
+    font-weight: 600;
+  }
+  .form-group input, .form-group select, .form-group textarea {
+    width: 100%;
+  }
+
+  .calc-result-box {
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+    margin-top: 12px;
+  }
+  .calc-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12.5px;
+    padding: 4px 0;
+  }
+  .calc-row.total {
+    border-top: 1px solid var(--border-color);
+    margin-top: 6px;
+    padding-top: 8px;
+    font-weight: 700;
+    font-size: 14px;
+  }
+
+  /* Wallet Cards */
+  .wallet-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 12px;
+  }
+  .wallet-tile {
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+  }
+  .wallet-tile .wt-name {
+    font-size: 12px;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+  }
+  .wallet-tile .wt-bal {
+    font-family: var(--font-mono);
+    font-size: 17px;
+    font-weight: 700;
+  }
+  .wallet-tile .wt-sub {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 3px;
+  }
+
+  /* Academy Tabs */
+  .academy-layout {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    gap: 18px;
+  }
+  .academy-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .academy-item {
+    text-align: left;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    padding: 11px 14px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 13px;
+  }
+  .academy-item.active {
+    background: var(--accent-yellow-dim);
+    border-color: var(--accent-yellow);
+    color: var(--accent-yellow);
+  }
+  .academy-content h3 {
+    color: var(--accent-yellow);
+    margin-bottom: 10px;
+    font-size: 18px;
+  }
+  .academy-content h4 {
+    color: var(--text-primary);
+    margin: 14px 0 6px;
+    font-size: 15px;
+  }
+  .academy-content p, .academy-content li {
+    color: #c8cfd8;
+    margin-bottom: 8px;
+    font-size: 13.5px;
+  }
+  .academy-content ul {
+    padding-left: 20px;
+  }
+
+  /* Modal */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.75);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 16px;
+  }
+  .modal-backdrop.open {
+    display: flex;
+  }
+  .modal-box {
+    background: var(--bg-card);
+    border: 1px solid var(--border-highlight);
+    border-radius: var(--radius-lg);
+    max-width: 520px;
+    width: 100%;
+    padding: 22px;
+    box-shadow: var(--shadow-lg);
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  /* Floating Tooltip for Mentor Mode */
+  #mentor-tooltip {
+    position: fixed;
+    z-index: 2000;
+    background: #1d2432;
+    border: 1px solid var(--accent-yellow);
+    color: var(--text-primary);
+    padding: 10px 13px;
+    border-radius: 8px;
+    max-width: 310px;
+    font-size: 12.5px;
+    line-height: 1.45;
+    box-shadow: var(--shadow-lg);
+    pointer-events: none;
+    display: none;
+  }
+  #mentor-tooltip strong {
+    color: var(--accent-yellow);
+    display: block;
+    margin-bottom: 3px;
+  }
+
+  /* Toast Notifications */
+  #toast-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1500;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-width: 360px;
+  }
+  .toast {
+    background: var(--bg-card);
+    border-left: 4px solid var(--accent-yellow);
+    border-top: 1px solid var(--border-highlight);
+    border-right: 1px solid var(--border-highlight);
+    border-bottom: 1px solid var(--border-highlight);
+    padding: 12px 15px;
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-lg);
+    font-size: 13px;
+    animation: slideIn 0.2s ease;
+  }
+  .toast.success { border-left-color: var(--green); }
+  .toast.error { border-left-color: var(--red); }
+
+  @keyframes slideIn {
+    from { transform: translateX(30px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+
+  /* Responsive */
+  @media (max-width: 1024px) {
+    .grid-sidebar, .order-layout {
+      grid-template-columns: 1fr;
+    }
+    .academy-layout {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 768px) {
+    header {
+      height: auto;
+      padding: 10px 14px;
+      flex-wrap: wrap;
+    }
+    .grid-2, .grid-3, .order-summary-grid {
+      grid-template-columns: 1fr;
+    }
+    main {
+      padding: 12px;
+    }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="brand-logo">BY<span>BIT</span></div>
+    <span class="brand-badge">P2P & Arbitrage Pro</span>
+  </div>
+
+  <nav class="nav-tabs" id="main-nav">
+    <button class="nav-tab active" data-view="view-p2p">📊 P2P Стакан</button>
+    <button class="nav-tab" data-view="view-maker">📢 Мои объявления <span class="nav-badge" id="badge-my-ads" style="display:none">0</span></button>
+    <button class="nav-tab" data-view="view-order">⚡ Активный ордер <span class="nav-badge" id="badge-active-order" style="display:none">1</span></button>
+    <button class="nav-tab" data-view="view-spot">🔄 Спот-рынок</button>
+    <button class="nav-tab" data-view="view-wallet">💼 Кошелёк и P&L</button>
+    <button class="nav-tab" data-view="view-academy">🎓 Академия</button>
+  </nav>
+
+  <div class="header-controls">
+    <div class="mentor-toggle active" id="mentor-toggle-btn" title="Включить или выключить подсказки Ментора">
+      <span class="mentor-dot"></span>
+      <span class="mentor-label">Ментор: ВКЛ</span>
+    </div>
+    <div class="status-pill" id="merchant-tier-pill" data-tip="Ваш статус на Bybit P2P. Обычный пользователь платит 0.3% мейкер-комиссии за покупку крипты. Проверенный мерчант — 0.275%, Блокчейн-мерчант — 0.25%.">
+      🏅 <span id="tier-name-display">Обычный</span>
+    </div>
+  </div>
+</header>
+
+<div class="top-ribbon">
+  <div class="quest-tracker" id="quest-bar">
+    <span class="quest-tag" id="quest-level-badge">КВЕСТ 1/4</span>
+    <span id="quest-text">Загрузка задания...</span>
+    <button class="btn btn-ghost btn-sm" onclick="openOnboarding()">📖 Туториал</button>
+  </div>
+  <div class="net-worth-bar">
+    <div class="nw-item"><span>Фиат (RUB):</span><strong id="top-fiat-total">0 ₽</strong></div>
+    <div class="nw-item"><span>Крипто (~RUB):</span><strong id="top-crypto-total">0 ₽</strong></div>
+    <div class="nw-item"><span>Чистый P&L:</span><strong id="top-pnl" style="color:var(--green)">0 ₽</strong></div>
+  </div>
+</div>
+
+<main>
+  <!-- ==================== VIEW 1: P2P ORDER BOOK ==================== -->
+  <section id="view-p2p" class="view-section active">
+    <div class="mentor-box" id="p2p-mentor-insight">
+      <span>💡</span>
+      <div id="p2p-mentor-text">Анализ стакана...</div>
+    </div>
+
+    <div class="p2p-toolbar">
+      <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+        <div class="side-switcher">
+          <button class="side-btn buy active" id="btn-side-buy" onclick="setBookSide('BUY')">Купить</button>
+          <button class="side-btn sell" id="btn-side-sell" onclick="setBookSide('SELL')">Продать</button>
+        </div>
+
+        <div class="coin-pills" id="book-coin-pills">
+          <button class="coin-pill active" data-coin="USDT">USDT</button>
+          <button class="coin-pill" data-coin="USDC">USDC</button>
+          <button class="coin-pill" data-coin="BTC">BTC</button>
+          <button class="coin-pill" data-coin="ETH">ETH</button>
+        </div>
+      </div>
+
+      <div class="filter-controls">
+        <input type="number" id="filter-amount" placeholder="Сумма в RUB (напр. 15000)" style="width:190px;" oninput="renderOrderBook()">
+        <select id="filter-payment" onchange="renderOrderBook()">
+          <option value="ALL">Все платёжные методы</option>
+          <option value="SBP">СБП / Банк. перевод</option>
+          <option value="YOOMONEY">ЮMoney</option>
+          <option value="PAYEER">Payeer</option>
+          <option value="VOLET">Volet (AdvCash)</option>
+          <option value="GIFTCODE">Подарочные коды</option>
+        </select>
+        <label style="display:flex; align-items:center; gap:5px; font-size:12.5px; color:var(--text-secondary); cursor:pointer;">
+          <input type="checkbox" id="filter-verified" onchange="renderOrderBook()"> Только мерчанты
+        </label>
+        <button class="btn btn-ghost btn-sm" onclick="tickMarket(true)">🔄 Обновить</button>
+      </div>
+    </div>
+
+    <div class="card" style="padding:0; overflow:hidden;">
+      <div class="book-table-wrap">
+        <table class="p2p-table">
+          <thead>
+            <tr>
+              <th>Мерчант / Контрагент</th>
+              <th><span class="mentor-term" data-tip="Курс за 1 монету. Как Тейкер вы берёте объявление из стакана с комиссией биржи 0%.">Цена (RUB)</span></th>
+              <th><span class="mentor-term" data-tip="Доступный объём монет у продавца/покупателя и лимиты одной сделки (Мин – Макс в рублях).">Доступно / Лимиты</span></th>
+              <th><span class="mentor-term" data-tip="Платёжные системы, которые принимает контрагент. Сравнивайте комиссии самих платёжек!">Способ оплаты</span></th>
+              <th>Условия сделки</th>
+              <th style="text-align:right;">Торговля (Комиссия 0%)</th>
+            </tr>
+          </thead>
+          <tbody id="order-book-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== VIEW 2: MAKER PANEL ==================== -->
+  <section id="view-maker" class="view-section">
+    <div class="mentor-box">
+      <span>📢</span>
+      <div>
+        <strong>Режим Мейкера (Креатора):</strong> Здесь вы сами назначаете цену и ждёте откликов клиентов. На Bybit P2P размещение объявления на <strong>покупку</strong> крипты за RUB облагается комиссией <strong><span id="mentor-maker-fee">0.3%</span></strong>, а на <strong>продажу</strong> крипты за RUB — <strong>0%</strong>! Следите за калькулятором спреда справа.
+      </div>
+    </div>
+
+    <div class="grid-sidebar">
+      <div>
+        <div class="card" style="margin-bottom:18px;">
+          <div class="card-header">
+            <div class="card-title">➕ Разместить новое P2P-объявление</div>
+            <span style="font-size:12px; color:var(--text-secondary);">Индикативный курс: <strong id="maker-ref-price" style="color:var(--accent-yellow)">--</strong></span>
+          </div>
+
+          <div class="grid-2">
+            <div class="form-group">
+              <label>Направление вашего объявления</label>
+              <select id="maker-side" onchange="updateMakerCalc()">
+                <option value="BUY">Я хочу КУПИТЬ крипту (Скупка у населения)</option>
+                <option value="SELL">Я хочу ПРОДАТЬ крипту (Реализация из кошелька)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Криптовалюта</label>
+              <select id="maker-coin" onchange="onMakerCoinChange()">
+                <option value="USDT">USDT</option>
+                <option value="USDC">USDC</option>
+                <option value="BTC">BTC</option>
+                <option value="ETH">ETH</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid-3">
+            <div class="form-group">
+              <label>Ваша цена за 1 монету (RUB)</label>
+              <input type="number" step="0.01" id="maker-price" oninput="updateMakerCalc()">
+            </div>
+            <div class="form-group">
+              <label>Общий объём монет</label>
+              <input type="number" step="0.0001" id="maker-amount" value="250" oninput="updateMakerCalc()">
+            </div>
+            <div class="form-group">
+              <label>Платёжный метод</label>
+              <select id="maker-payment" onchange="updateMakerCalc()">
+                <option value="SBP">СБП / Банк. перевод (Комиссия 0%)</option>
+                <option value="YOOMONEY">ЮMoney (Комиссия 0.5%)</option>
+                <option value="PAYEER">Payeer (Комиссия 0.5%)</option>
+                <option value="VOLET">Volet / AdvCash (Комиссия 0%)</option>
+                <option value="GIFTCODE">Подарочные коды (Комиссия 0%)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="form-group">
+              <label>Мин. лимит сделки (RUB)</label>
+              <input type="number" id="maker-min" value="2000">
+            </div>
+            <div class="form-group">
+              <label>Макс. лимит сделки (RUB)</label>
+              <input type="number" id="maker-max" value="50000">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Условия сделки (видит контрагент)</label>
+            <input type="text" id="maker-terms" value="Перевод строго от владельца аккаунта Bybit. Третьи лица — возврат. Чек в чат.">
+          </div>
+
+          <button class="btn btn-yellow" style="width:100%; padding:11px;" onclick="publishMakerAd()">Опубликовать объявление в стакан</button>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">📋 Мои активные объявления</div>
+            <span style="font-size:12px; color:var(--text-secondary);">Боты откликаются автоматически, если курс в рынке</span>
+          </div>
+          <div id="my-ads-list">
+            <p style="color:var(--text-secondary); text-align:center; padding:20px;">У вас пока нет активных объявлений.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Spread Calculator -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🧮 Калькулятор спреда и комиссий</div>
+        </div>
+        <p style="font-size:12px; color:var(--text-secondary); margin-bottom:12px;">
+          Рассчитайте чистый профит круга с учётом комиссии мейкера Bybit (<span id="calc-tier-rate">0.3%</span> при покупке) и комиссии платёжной системы.
+        </p>
+
+        <div class="form-group">
+          <label>Цена закупки 1 монеты (RUB)</label>
+          <input type="number" step="0.01" id="calc-buy-price" oninput="recalcSpreadWidget()">
+        </div>
+        <div class="form-group">
+          <label>Цена продажи 1 монеты (RUB)</label>
+          <input type="number" step="0.01" id="calc-sell-price" oninput="recalcSpreadWidget()">
+        </div>
+        <div class="form-group">
+          <label>Оборот круга (RUB)</label>
+          <input type="number" id="calc-budget" value="20000" oninput="recalcSpreadWidget()">
+        </div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Закуп как:</label>
+            <select id="calc-buy-role" onchange="recalcSpreadWidget()">
+              <option value="MAKER">Мейкер (0.3% / 0.25%)</option>
+              <option value="TAKER">Тейкер (0%)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Продажа как:</label>
+            <select id="calc-sell-role" onchange="recalcSpreadWidget()">
+              <option value="MAKER">Мейкер (0%)</option>
+              <option value="TAKER">Тейкер (0%)</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Комиссия платёжки за перевод (%)</label>
+          <select id="calc-pm-fee" onchange="recalcSpreadWidget()">
+            <option value="0">0% (СБП / Volet / Коды)</option>
+            <option value="0.5">0.5% (ЮMoney / Payeer)</option>
+            <option value="1.0">1.0% (Межбанк / сложный перевод)</option>
+          </select>
+        </div>
+
+        <div class="calc-result-box" id="spread-calc-output"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== VIEW 3: ACTIVE ORDER & CHAT ==================== -->
+  <section id="view-order" class="view-section">
+    <div id="no-active-order-state" class="card" style="text-align:center; padding:50px 20px;">
+      <div style="font-size:40px; margin-bottom:10px;">📭</div>
+      <h3>Нет активного P2P-ордера</h3>
+      <p style="color:var(--text-secondary); max-width:460px; margin:8px auto 18px;">
+        Выберите выгодное объявление в «P2P Стакане» как Тейкер или создайте своё объявление в «Мейкер-панели» и дождитесь отклика клиента.
+      </p>
+      <button class="btn btn-yellow" onclick="switchView('view-p2p')">Перейти в P2P Стакан</button>
+    </div>
+
+    <div id="active-order-workspace" style="display:none;">
+      <div class="escrow-banner">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span style="font-size:22px;">🔒</span>
+          <div>
+            <div style="font-weight:700; color:var(--green);" id="escrow-status-title">Эскроу Bybit активен: криптовалюта заморожена биржей</div>
+            <div style="font-size:12px; color:var(--text-secondary);" id="escrow-status-desc">Продавец не может вывести монеты, пока открыт ордер.</div>
+          </div>
+        </div>
+
+        <div class="timer-box">
+          <span>⏱ <span id="order-timer-display">15:00</span></span>
+          <div class="speed-btns">
+            <button class="speed-btn active" data-speed="1" onclick="setTimerSpeed(1)">1x</button>
+            <button class="speed-btn" data-speed="5" onclick="setTimerSpeed(5)">5x</button>
+            <button class="speed-btn" data-speed="0" onclick="setTimerSpeed(0)">⏸</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="order-layout">
+        <!-- Left: Order Details & Controls -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <span class="badge-tag" id="ao-direction-badge">ПОКУПКА</span>
+              <span style="font-family:var(--font-mono); font-size:13px; color:var(--text-secondary); margin-left:8px;" id="ao-id">#BYB-000000</span>
+            </div>
+            <div style="font-size:13px;">Контрагент: <strong id="ao-cp-name">--</strong> (<span id="ao-cp-stats">--</span>)</div>
+          </div>
+
+          <div class="order-summary-grid">
+            <div class="os-item">
+              <label>Сумма фиата к оплате</label>
+              <div class="val" style="color:var(--accent-yellow);" id="ao-fiat-amount">0 ₽</div>
+            </div>
+            <div class="os-item">
+              <label>Курс сделки</label>
+              <div class="val" id="ao-price">0 ₽</div>
+            </div>
+            <div class="os-item">
+              <label>Количество крипты (чистыми)</label>
+              <div class="val" style="color:var(--green);" id="ao-crypto-amount">0 USDT</div>
+            </div>
+          </div>
+
+          <div class="requisites-card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+              <strong>💳 Платёжные реквизиты сделки (<span id="ao-pm-name">--</span>)</strong>
+              <span style="font-size:12px; color:var(--text-secondary);">Комиссия платёжки: <strong id="ao-pm-fee">0%</strong></span>
+            </div>
+            <div style="font-size:13px; color:#d0d7de; line-height:1.6;" id="ao-requisites-details"></div>
+
+            <div class="receipt-verification-box" id="bank-check-panel">
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                <div>
+                  <strong>🏦 Выписка виртуального кошелька (<span id="check-pm-label">--</span>)</strong>
+                  <div style="font-size:12px; color:var(--text-secondary);" id="bank-check-status">Нажмите «Проверить баланс платёжки», чтобы сверить реальное поступление денег.</div>
+                </div>
+                <button class="btn btn-ghost btn-sm" onclick="checkPaymentWallet()">🔍 Проверить баланс платёжки</button>
+              </div>
+              <div id="bank-tx-log" style="margin-top:8px; font-family:var(--font-mono); font-size:12px; display:none;"></div>
+            </div>
+          </div>
+
+          <div class="mentor-box" id="order-mentor-tip">
+            <span>🛡️</span>
+            <div id="order-mentor-tip-text">Внимательно читайте чат и проверяйте реальное поступление средств перед отпуском монет!</div>
+          </div>
+
+          <div class="action-bar" id="order-action-buttons"></div>
+        </div>
+
+        <!-- Right: Live Counterparty Chat -->
+        <div class="chat-container">
+          <div class="chat-header">
+            <div>
+              <strong id="chat-cp-title">Чат с контрагентом</strong>
+              <div style="font-size:11px; color:var(--green);">● В сети • Защищено эскроу Bybit</div>
+            </div>
+            <span style="font-size:11px; color:var(--text-secondary);">Не переходите в TG!</span>
+          </div>
+
+          <div class="chat-messages" id="chat-messages-box"></div>
+
+          <div class="quick-replies">
+            <button class="qr-chip" onclick="sendQuickChat('Здравствуйте! Готов к сделке.')">👋 Приветствие</button>
+            <button class="qr-chip" onclick="sendQuickChat('Оплата только от владельца аккаунта Bybit, третьи лица не принимаю.')">🛡️ Про 3-х лиц</button>
+            <button class="qr-chip" onclick="sendQuickChat('Общение и все чеки строго в чате Bybit.')">🚫 Без Telegram</button>
+            <button class="qr-chip" onclick="sendQuickChat('Перевёл, проверьте пожалуйста поступление.')">✅ Перевёл</button>
+            <button class="qr-chip" onclick="sendQuickChat('Средства пока не поступили на баланс, ожидаю фактического зачисления.')">⏳ Жду зачисления</button>
+          </div>
+
+          <div class="chat-input-row">
+            <input type="text" id="chat-input" placeholder="Написать сообщение контрагенту..." onkeydown="if(event.key==='Enter') sendUserChat()">
+            <button class="btn btn-yellow" onclick="sendUserChat()">Отправить</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== VIEW 4: SPOT MARKET ==================== -->
+  <section id="view-spot" class="view-section">
+    <div class="mentor-box">
+      <span>🔄</span>
+      <div>
+        <strong>Межрыночный / Спотовый арбитраж (P2P → Спот → P2P):</strong> Иногда на P2P выгоднее купить <strong>BTC</strong> или <strong>ETH</strong> с дисконтом, мгновенно обменять их на <strong>USDT</strong> на спотовом рынке (комиссия <strong>0.1%</strong>) и продать USDT в P2P-стакане. Сверяйте спотовый курс с P2P!
+      </div>
+    </div>
+
+    <div class="grid-sidebar">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">📈 Спотовый терминал Bybit (Мгновенная конвертация)</div>
+          <span style="font-size:12px; color:var(--text-secondary);">Комиссия тейкера/мейкера: <strong style="color:var(--accent-yellow)">0.1%</strong></span>
+        </div>
+
+        <div class="grid-3" id="spot-tickers-grid" style="margin-bottom:18px;"></div>
+
+        <div style="background:var(--bg-input); border:1px solid var(--border-color); border-radius:var(--radius-md); padding:16px;">
+          <div class="grid-2">
+            <div class="form-group">
+              <label>Отдаю (Продаю на споте)</label>
+              <div style="display:flex; gap:8px;">
+                <select id="spot-from-coin" style="width:110px;" onchange="updateSpotPreview()">
+                  <option value="USDT">USDT</option>
+                  <option value="USDC">USDC</option>
+                  <option value="BTC">BTC</option>
+                  <option value="ETH">ETH</option>
+                </select>
+                <input type="number" step="0.000001" id="spot-from-amount" placeholder="Количество" oninput="updateSpotPreview()">
+              </div>
+              <div style="font-size:11.5px; color:var(--text-secondary); margin-top:4px;">
+                Доступно: <span id="spot-avail-bal" style="color:var(--text-primary); cursor:pointer; text-decoration:underline;" onclick="fillMaxSpot()">0</span>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Получаю (Покупаю на споте)</label>
+              <div style="display:flex; gap:8px;">
+                <select id="spot-to-coin" style="width:110px;" onchange="updateSpotPreview()">
+                  <option value="BTC">BTC</option>
+                  <option value="USDT">USDT</option>
+                  <option value="USDC">USDC</option>
+                  <option value="ETH">ETH</option>
+                </select>
+                <input type="text" id="spot-to-amount" readonly placeholder="0.000000">
+              </div>
+              <div style="font-size:11.5px; color:var(--text-secondary); margin-top:4px;">
+                Комиссия 0.1%: <span id="spot-fee-preview">0</span>
+              </div>
+            </div>
+          </div>
+
+          <button class="btn btn-yellow" style="width:100%; padding:11px; margin-top:6px;" onclick="executeSpotTrade()">Выполнить спотовый обмен</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">⚖️ Сканер P2P ↔ Спот</div>
+        </div>
+        <p style="font-size:12px; color:var(--text-secondary); margin-bottom:10px;">
+          Сравнение лучшей цены покупки монеты в P2P с её реальной стоимостью через Спот + USDT P2P:
+        </p>
+        <div id="spot-arb-scanner"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== VIEW 5: WALLET & ANALYTICS ==================== -->
+  <section id="view-wallet" class="view-section">
+    <div class="grid-2" style="margin-bottom:18px;">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">💳 Фиатные кошельки (Виртуальные платёжки)</div>
+          <span style="font-size:12px; color:var(--text-secondary);">Балансы по каждой системе раздельные</span>
+        </div>
+        <div class="wallet-grid" id="fiat-wallets-grid"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🪙 Крипто-аккаунт финансирования Bybit</div>
+          <span style="font-size:12px; color:var(--text-secondary);">Единый баланс для P2P и Спота</span>
+        </div>
+        <div class="wallet-grid" id="crypto-wallets-grid"></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:18px;">
+      <div class="card-header">
+        <div class="card-title">📊 Статистика трейдера и прогресс Мерчанта</div>
+        <button class="btn btn-red btn-sm" onclick="resetSimulation()">🗑️ Сбросить прогресс</button>
+      </div>
+      <div class="grid-3" id="stats-summary-grid"></div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">📜 История сделок и конвертаций</div>
+        </div>
+        <div id="trade-history-list" style="max-height:340px; overflow-y:auto;"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">⚠️ Журнал ошибок и разбор мошенничества</div>
+        </div>
+        <div id="mistakes-log-list" style="max-height:340px; overflow-y:auto;"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== VIEW 6: ACADEMY ==================== -->
+  <section id="view-academy" class="view-section">
+    <div class="academy-layout">
+      <div class="academy-menu" id="academy-menu">
+        <button class="academy-item active" data-topic="basics">1. Как устроен P2P и Эскроу</button>
+        <button class="academy-item" data-topic="maker_taker">2. Мейкер vs Тейкер и комиссии</button>
+        <button class="academy-item" data-topic="arbitrage">3. Внутрибиржевой и Спот-арбитраж</button>
+        <button class="academy-item" data-topic="scams">4. Схемы мошенников («Треугольник» и др.)</button>
+        <button class="academy-item" data-topic="appeals">5. Как выигрывать апелляции</button>
+      </div>
+      <div class="card academy-content" id="academy-content-box"></div>
+    </div>
+  </section>
+</main>
+
+<!-- Floating Tooltip -->
+<div id="mentor-tooltip"></div>
+
+<!-- Toast Container -->
+<div id="toast-container"></div>
+
+<!-- Modal: Take Order (Taker) -->
+<div class="modal-backdrop" id="modal-taker">
+  <div class="modal-box">
+    <div class="card-header">
+      <div class="card-title" id="mt-title">Купить USDT</div>
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-taker')">✕</button>
+    </div>
+    <div id="mt-merchant-info" style="margin-bottom:12px; font-size:13px; color:var(--text-secondary);"></div>
+    <div class="form-group">
+      <label id="mt-input-label">Сумма в RUB</label>
+      <input type="number" id="mt-fiat-input" oninput="updateTakerModalCalc()">
+      <div style="font-size:11.5px; color:var(--text-secondary); margin-top:4px;" id="mt-limits-hint">Лимиты: --</div>
+    </div>
+    <div class="form-group">
+      <label>Выберите платёжный метод из доступных у контрагента</label>
+      <select id="mt-pm-select" onchange="updateTakerModalCalc()"></select>
+    </div>
+    <div class="calc-result-box" id="mt-summary-box"></div>
+    <div style="display:flex; gap:10px; margin-top:16px;">
+      <button class="btn btn-ghost" style="flex:1;" onclick="closeModal('modal-taker')">Отмена</button>
+      <button class="btn btn-yellow" style="flex:2;" id="mt-confirm-btn" onclick="confirmTakeOrder()">Открыть сделку</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Onboarding Tutorial -->
+<div class="modal-backdrop" id="modal-onboarding">
+  <div class="modal-box" style="max-width:580px;">
+    <div class="card-header">
+      <div class="card-title">🎓 Добро пожаловать в симулятор Bybit P2P Pro</div>
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-onboarding')">✕</button>
+    </div>
+    <div id="onboarding-step-content" style="font-size:13.5px; line-height:1.6; color:#d0d7de;"></div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:18px; padding-top:12px; border-top:1px solid var(--border-color);">
+      <span id="onboarding-step-indicator" style="font-size:12px; color:var(--text-secondary);">Шаг 1 из 4</span>
+      <div style="display:flex; gap:8px;">
+        <button class="btn btn-ghost btn-sm" id="ob-prev-btn" onclick="stepOnboarding(-1)">Назад</button>
+        <button class="btn btn-yellow btn-sm" id="ob-next-btn" onclick="stepOnboarding(1)">Далее →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================================
+   BYBIT P2P & ARBITRAGE SIMULATOR — CORE ARCHITECTURE & GAME ENGINE
+   ============================================================================ */
+
+const STORAGE_KEY = 'bybit_p2p_sim_v1';
+
+const PAYMENT_METHODS = {
+  SBP:      { id: 'SBP',      name: 'СБП / Банк. перевод', fee: 0.0,   color: '#0ecb81', short: 'СБП' },
+  YOOMONEY: { id: 'YOOMONEY', name: 'ЮMoney',              fee: 0.005, color: '#8b5cf6', short: 'ЮMoney' },
+  PAYEER:   { id: 'PAYEER',   name: 'Payeer',              fee: 0.005, color: '#3b82f6', short: 'Payeer' },
+  VOLET:    { id: 'VOLET',    name: 'Volet (AdvCash)',     fee: 0.0,   color: '#10b981', short: 'Volet' },
+  GIFTCODE: { id: 'GIFTCODE', name: 'Подарочные коды',     fee: 0.0,   color: '#f59e0b', short: 'Коды' }
+};
+
+const COINS = ['USDT', 'USDC', 'BTC', 'ETH'];
+
+const MERCHANT_TIERS = [
+  { id: 'REGULAR',    name: 'Обычный',              makerBuyFee: 0.003,   minTrades: 0,  minVol: 0 },
+  { id: 'VERIFIED',   name: 'Проверенный мерчант',  makerBuyFee: 0.00275, minTrades: 5,  minVol: 100000 },
+  { id: 'BLOCKCHAIN', name: 'Блокчейн-мерчант',     makerBuyFee: 0.0025,  minTrades: 15, minVol: 400000 }
+];
+
+const QUESTS = [
+  {
+    id: 1,
+    title: 'Квест 1: Первая покупка как Тейкер',
+    desc: 'Купите любые USDT в «P2P Стакане» от лица Тейкера (комиссия 0%). Обязательно проверьте реквизиты и не попадитесь на уловки в чате!',
+    reward: 1500
+  },
+  {
+    id: 2,
+    title: 'Квест 2: Мейкер-круг в плюс',
+    desc: 'Разместите своё объявление в «Мейкер-панели» (покупка или продажа), дождитесь клиента, проведите сделку и зафиксируйте положительный чистый P&L.',
+    reward: 3000
+  },
+  {
+    id: 3,
+    title: 'Квест 3: Связка P2P → Спот → P2P',
+    desc: 'Купите BTC или ETH на P2P, обменяйте их на USDT на «Спот-рынке» (комиссия 0.1%) и продайте USDT в P2P.',
+    reward: 5000
+  },
+  {
+    id: 4,
+    title: 'Квест 4: Охотник на мошенников',
+    desc: 'Распознайте фейковый чек или перевод от 3-го лица в активном ордере, НЕ отпускайте крипту и выиграйте апелляцию!',
+    reward: 8000
+  }
+];
+
+const DEFAULT_STATE = {
+  mentorMode: true,
+  onboardingDone: false,
+  fiatWallets: {
+    SBP: 35000,
+    YOOMONEY: 20000,
+    PAYEER: 15000,
+    VOLET: 15000,
+    GIFTCODE: 15000
+  },
+  cryptoWallets: {
+    USDT: 200.0,
+    USDC: 50.0,
+    BTC: 0.001,
+    ETH: 0.02
+  },
+  initialNetWorthRub: 124500,
+  spotPricesUsdt: {
+    USDT: 1.0,
+    USDC: 1.0002,
+    BTC: 91450.0,
+    ETH: 3180.0
+  },
+  baseUsdtRub: 94.50,
+  stats: {
+    completedOrders: 0,
+    totalVolumeRub: 0,
+    realizedPnlRub: 0,
+    scamsCaught: 0,
+    mistakesCount: 0,
+    spotTradesCount: 0,
+    boughtNonUsdtP2P: false,
+    convertedToUsdtSpot: false
+  },
+  questIndex: 0,
+  myAds: [],
+  activeOrder: null,
+  history: [],
+  mistakes: []
+};
+
+let state = loadState();
+let bookSide = 'BUY'; // 'BUY' (пользователь покупает крипту у мейкеров), 'SELL' (пользователь продаёт крипту мейкерам)
+let bookCoin = 'USDT';
+let orderBookAds = [];
+let selectedTakerAd = null;
+let timerInterval = null;
+let marketInterval = null;
+let onboardingStep = 0;
+
+/* -------------------- PERSISTENCE -------------------- */
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return JSON.parse(JSON.stringify(DEFAULT_STATE));
+    const parsed = JSON.parse(raw);
+    return Object.assign(JSON.parse(JSON.stringify(DEFAULT_STATE)), parsed);
+  } catch (e) {
+    return JSON.parse(JSON.stringify(DEFAULT_STATE));
+  }
+}
+
+function saveState() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+function resetSimulation() {
+  if (!confirm('Сбросить весь прогресс, балансы, статистику и квесты к начальным значениям?')) return;
+  localStorage.removeItem(STORAGE_KEY);
+  state = JSON.parse(JSON.stringify(DEFAULT_STATE));
+  state.initialNetWorthRub = calcTotalNetWorthRub();
+  saveState();
+  generateInitialOrderBook();
+  renderAll();
+  toast('Симулятор сброшен до начального капитала!', 'success');
+}
+
+/* -------------------- FORMATTING & MATH HELPERS -------------------- */
+function fmtRub(num) {
+  return new Intl.NumberFormat('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num) + ' ₽';
+}
+
+function fmtCoin(num, coin) {
+  const dec = (coin === 'BTC' || coin === 'ETH') ? 6 : 2;
+  return Number(num).toFixed(dec) + ' ' + coin;
+}
+
+function getCurrentTier() {
+  let tier = MERCHANT_TIERS[0];
+  for (const t of MERCHANT_TIERS) {
+    if (state.stats.completedOrders >= t.minTrades && state.stats.totalVolumeRub >= t.minVol) {
+      tier = t;
+    }
+  }
+  return tier;
+}
+
+function getCoinBaseRubPrice(coin) {
+  return state.baseUsdtRub * state.spotPricesUsdt[coin];
+}
+
+function calcTotalNetWorthRub() {
+  let fiatSum = 0;
+  for (const k of Object.keys(state.fiatWallets)) {
+    fiatSum += state.fiatWallets[k];
+  }
+  let cryptoSum = 0;
+  for (const c of COINS) {
+    cryptoSum += state.cryptoWallets[c] * getCoinBaseRubPrice(c);
+  }
+  return fiatSum + cryptoSum;
+}
+
+function toast(msg, type = 'info') {
+  const container = document.getElementById('toast-container');
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.innerHTML = msg;
+  container.appendChild(el);
+  setTimeout(() => {
+    el.style.opacity = '0';
+    setTimeout(() => el.remove(), 250);
+  }, 4200);
+}
+
+/* -------------------- NAVIGATION & UI SYNC -------------------- */
+document.querySelectorAll('.nav-tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    switchView(btn.dataset.view);
+  });
+});
+
+function switchView(viewId) {
+  document.querySelectorAll('.nav-tab').forEach(b => b.classList.toggle('active', b.dataset.view === viewId));
+  document.querySelectorAll('.view-section').forEach(s => s.classList.toggle('active', s.id === viewId));
+  if (viewId === 'view-maker') {
+    onMakerCoinChange();
+    recalcSpreadWidget();
+  }
+  if (viewId === 'view-spot') {
+    renderSpotView();
+  }
+  if (viewId === 'view-wallet') {
+    renderWalletView();
+  }
+  if (viewId === 'view-order') {
+    renderActiveOrderView();
+  }
+}
+
+document.getElementById('mentor-toggle-btn').addEventListener('click', () => {
+  state.mentorMode = !state.mentorMode;
+  saveState();
+  syncMentorModeUI();
+});
+
+function syncMentorModeUI() {
+  const btn = document.getElementById('mentor-toggle-btn');
+  btn.classList.toggle('active', state.mentorMode);
+  btn.querySelector('.mentor-label').textContent = state.mentorMode ? 'Ментор: ВКЛ' : 'Ментор: ВЫКЛ';
+  document.body.classList.toggle('mentor-off', !state.mentorMode);
+}
+
+function renderTopBars() {
+  const tier = getCurrentTier();
+  document.getElementById('tier-name-display').textContent = `${tier.name} (${(tier.makerBuyFee * 100).toFixed(3).replace(/\.?0+$/, '')}%)`;
+
+  let fiatTotal = Object.values(state.fiatWallets).reduce((a, b) => a + b, 0);
+  let cryptoTotal = COINS.reduce((acc, c) => acc + state.cryptoWallets[c] * getCoinBaseRubPrice(c), 0);
+  const netWorth = fiatTotal + cryptoTotal;
+  const pnl = netWorth - state.initialNetWorthRub;
+
+  document.getElementById('top-fiat-total').textContent = fmtRub(fiatTotal);
+  document.getElementById('top-crypto-total').textContent = fmtRub(cryptoTotal);
+  const pnlEl = document.getElementById('top-pnl');
+  pnlEl.textContent = (pnl >= 0 ? '+' : '') + fmtRub(pnl);
+  pnlEl.style.color = pnl >= 0 ? 'var(--green)' : 'var(--red)';
+
+  // Badges
+  const myAdsBadge = document.getElementById('badge-my-ads');
+  myAdsBadge.style.display = state.myAds.length ? 'inline-block' : 'none';
+  myAdsBadge.textContent = state.myAds.length;
+
+  const aoBadge = document.getElementById('badge-active-order');
+  aoBadge.style.display = state.activeOrder ? 'inline-block' : 'none';
+
+  // Quest Bar
+  const qBadge = document.getElementById('quest-level-badge');
+  const qText = document.getElementById('quest-text');
+  if (state.questIndex < QUESTS.length) {
+    const q = QUESTS[state.questIndex];
+    qBadge.textContent = `КВЕСТ ${q.id}/${QUESTS.length}`;
+    qText.innerHTML = `<strong>${q.title}:</strong> ${q.desc} <span style="color:var(--green)">(+${q.reward} ₽)</span>`;
+  } else {
+    qBadge.textContent = 'МАСТЕР P2P';
+    qText.innerHTML = '🏆 <strong>Все учебные квесты пройдены!</strong> Продолжайте оттачивать арбитражные связки.';
+  }
+}
+
+function checkQuestProgress(eventType, meta = {}) {
+  if (state.questIndex >= QUESTS.length) return;
+  const q = QUESTS[state.questIndex];
+  let completed = false;
+
+  if (q.id === 1 && eventType === 'TAKER_BUY_USDT_SUCCESS') completed = true;
+  if (q.id === 2 && eventType === 'MAKER_ORDER_SUCCESS' && state.stats.realizedPnlRub > 0) completed = true;
+  if (q.id === 3 && state.stats.boughtNonUsdtP2P && state.stats.convertedToUsdtSpot && eventType === 'SOLD_USDT_P2P') completed = true;
+  if (q.id === 4 && eventType === 'APPEAL_WON') completed = true;
+
+  if (completed) {
+    state.fiatWallets.SBP += q.reward;
+    state.initialNetWorthRub += q.reward;
+    state.questIndex++;
+    saveState();
+    toast(`🎉 <strong>${q.title} выполнен!</strong> Награда +${q.reward} ₽ зачислена на СБП.`, 'success');
+    renderAll();
+  }
+}
+
+/* -------------------- ORDER BOOK ENGINE (LIVE MARKET) -------------------- */
+const BOT_PROFILES = [
+  { name: 'CryptoVolga_Pro', verified: true,  orders: 1420, rate: 99.6, terms: 'Быстрый перевод. Строго со своей карты/кошелька.' },
+  { name: 'Almaz_Exchange',  verified: true,  orders: 890,  rate: 99.1, terms: 'Работаю 24/7. Чек в PDF или скриншот обязателен.' },
+  { name: 'SiberiaP2P',      verified: true,  orders: 2310, rate: 99.8, terms: 'Мгновенное подтверждение. Без третьих лиц!' },
+  { name: 'FastRub_Bot',     verified: false, orders: 310,  rate: 96.4, terms: 'Оплата в течение 5 минут. Пишите в чат.' },
+  { name: 'KazanTrader77',   verified: false, orders: 145,  rate: 94.8, terms: 'Перевожу без комментариев.' },
+  { name: 'NeoArbitrage',    verified: true,  orders: 670,  rate: 98.7, terms: 'Принимаю СБП, ЮMoney, Payeer. Быстро.' },
+  { name: 'Alexey_Newbie',   verified: false, orders: 19,   rate: 84.2, terms: 'Я новичок, подождите 5 минут пожалуйста.' },
+  { name: 'SuperRate_VIP',   verified: false, orders: 12,   rate: 71.5, terms: 'Пишите сразу в ТГ @fast_obmen_vip для подтверждения!' },
+  { name: 'MegaSpread_99',   verified: false, orders: 8,    rate: 68.0, terms: 'Оплачивает мой брат/жена, не пугайтесь.' },
+  { name: 'UralCapital',     verified: true,  orders: 1105, rate: 99.4, terms: 'Надёжный мерчант Bybit. Сверка по ФИО.' }
+];
+
+function generateInitialOrderBook() {
+  orderBookAds = [];
+  for (const coin of COINS) {
+    for (const side of ['BUY', 'SELL']) {
+      for (let i = 0; i < 8; i++) {
+        orderBookAds.push(createBotAd(coin, side, i));
+      }
+    }
+  }
+}
+
+function createBotAd(coin, side, index, specialType = 'NORMAL') {
+  const base = getCoinBaseRubPrice(coin);
+  const profile = BOT_PROFILES[Math.floor(Math.random() * BOT_PROFILES.length)];
+
+  // Spread offset: when user BUYs, makers sell higher than base; when user SELLs, makers buy lower than base
+  let spreadPct = (0.002 + index * 0.0028 + (Math.random() * 0.002));
+  let isAnomaly = false;
+  let isTrap = false;
+
+  if (specialType === 'ANOMALY' || (index === 0 && Math.random() < 0.35)) {
+    // Delicious arbitrage opportunity!
+    spreadPct = -0.006 - Math.random() * 0.005;
+    isAnomaly = true;
+  } else if (specialType === 'TRAP' || profile.rate < 80) {
+    // Attractive price, bad rating / scam risk / tiny limit
+    spreadPct = -0.009 - Math.random() * 0.006;
+    isTrap = true;
+  }
+
+  const rawPrice = side === 'BUY' ? base * (1 + spreadPct) : base * (1 - spreadPct);
+  const decimals = (coin === 'BTC' || coin === 'ETH') ? 0 : 2;
+  const price = Number(rawPrice.toFixed(decimals));
+
+  const pmKeys = Object.keys(PAYMENT_METHODS);
+  const shuffled = pmKeys.sort(() => 0.5 - Math.random());
+  const methods = shuffled.slice(0, isTrap ? 1 : (1 + Math.floor(Math.random() * 2)));
+
+  let minRub = isTrap ? 500 : ([1000, 2000, 3000, 5000][Math.floor(Math.random() * 4)]);
+  let maxRub = isTrap ? 3500 : ([25000, 50000, 80000, 150000][Math.floor(Math.random() * 4)]);
+  const availCoins = Number(((maxRub * (1.2 + Math.random())) / price).toFixed(coin === 'BTC' || coin === 'ETH' ? 5 : 2));
+
+  return {
+    id: 'AD-' + Math.random().toString(36).substring(2, 8).toUpperCase(),
+    coin,
+    side, // 'BUY' = maker sells to user; 'SELL' = maker buys from user
+    merchant: isTrap ? (Math.random() > 0.5 ? 'SuperRate_VIP' : 'MegaSpread_99') : profile.name,
+    verified: isTrap ? false : profile.verified,
+    orders: isTrap ? 9 : profile.orders + Math.floor(Math.random() * 20),
+    rate: isTrap ? Number((67 + Math.random() * 9).toFixed(1)) : profile.rate,
+    terms: isTrap ? 'Срочно! Оплата с карты друга или переход в ТГ.' : profile.terms,
+    price,
+    availCoins,
+    minRub,
+    maxRub,
+    methods,
+    isAnomaly,
+    isTrap,
+    ttl: isAnomaly ? 3 : 99
+  };
+}
+
+function tickMarket(manual = false) {
+  // Slight volatility in USDT/RUB and Spot
+  const deltaUsdt = (Math.random() - 0.5) * 0.16;
+  state.baseUsdtRub = Number(Math.max(88, Math.min(104, state.baseUsdtRub + deltaUsdt)).toFixed(2));
+  state.spotPricesUsdt.BTC = Number((state.spotPricesUsdt.BTC * (1 + (Math.random() - 0.5) * 0.002)).toFixed(1));
+  state.spotPricesUsdt.ETH = Number((state.spotPricesUsdt.ETH * (1 + (Math.random() - 0.5) * 0.0025)).toFixed(2));
+
+  // Refresh some ads, expire anomalies
+  orderBookAds.forEach((ad, idx) => {
+    if (ad.isAnomaly) {
+      ad.ttl--;
+      if (ad.ttl <= 0) {
+        orderBookAds[idx] = createBotAd(ad.coin, ad.side, 1, 'NORMAL');
+      }
+    } else if (Math.random() < 0.35) {
+      const jitter = 1 + (Math.random() - 0.5) * 0.0025;
+      const dec = (ad.coin === 'BTC' || ad.coin === 'ETH') ? 0 : 2;
+      ad.price = Number((ad.price * jitter).toFixed(dec));
+    }
+  });
+
+  // Occasionally spawn a fresh anomaly
+  if (Math.random() < 0.45) {
+    const c = COINS[Math.floor(Math.random() * COINS.length)];
+    const s = Math.random() > 0.5 ? 'BUY' : 'SELL';
+    const replaceIdx = orderBookAds.findIndex(a => a.coin === c && a.side === s && !a.isAnomaly);
+    if (replaceIdx !== -1) {
+      orderBookAds[replaceIdx] = createBotAd(c, s, 0, 'ANOMALY');
+    }
+  }
+
+  // Check if bots respond to user's Maker ads!
+  simulateMakerResponses();
+
+  saveState();
+  renderOrderBook();
+  renderTopBars();
+  if (document.getElementById('view-spot').classList.contains('active')) renderSpotView();
+  if (manual) toast('Стакан котировок обновлён', 'info');
+}
+
+function setBookSide(side) {
+  bookSide = side;
+  document.getElementById('btn-side-buy').classList.toggle('active', side === 'BUY');
+  document.getElementById('btn-side-sell').classList.toggle('active', side === 'SELL');
+  renderOrderBook();
+}
+
+document.querySelectorAll('#book-coin-pills .coin-pill').forEach(btn => {
+  btn.addEventListener('click', () => {
+    bookCoin = btn.dataset.coin;
+    document.querySelectorAll('#book-coin-pills .coin-pill').forEach(b => b.classList.toggle('active', b === btn));
+    renderOrderBook();
+  });
+});
+
+function renderOrderBook() {
+  const tbody = document.getElementById('order-book-tbody');
+  const amtFilter = parseFloat(document.getElementById('filter-amount').value) || 0;
+  const pmFilter = document.getElementById('filter-payment').value;
+  const verFilter = document.getElementById('filter-verified').checked;
+
+  let filtered = orderBookAds.filter(ad => {
+    if (ad.coin !== bookCoin || ad.side !== bookSide) return false;
+    if (verFilter && !ad.verified) return false;
+    if (pmFilter !== 'ALL' && !ad.methods.includes(pmFilter)) return false;
+    if (amtFilter > 0 && (amtFilter < ad.minRub || amtFilter > ad.maxRub)) return false;
+    return true;
+  });
+
+  // Sort: BUY -> lowest price first; SELL -> highest price first
+  filtered.sort((a, b) => bookSide === 'BUY' ? a.price - b.price : b.price - a.price);
+
+  // Update Mentor Insight for Order Book
+  updateBookMentorInsight(filtered);
+
+  if (!filtered.length) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:30px; color:var(--text-secondary);">Нет объявлений по выбранным фильтрам. Попробуйте сбросить сумму или фильтр мерчантов.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(ad => {
+    const rateClass = ad.rate >= 95 ? 'stat-good' : (ad.rate < 82 ? 'stat-bad' : '');
+    const rowClass = ad.isAnomaly ? 'ad-anomaly' : (ad.isTrap ? 'ad-trap' : '');
+    const badgeHtml = ad.isAnomaly
+      ? `<span class="badge-tag tag-hot">🔥 Выгодный курс</span>`
+      : (ad.isTrap ? `<span class="badge-tag tag-warn">⚠️ Риск / Низкий рейтинг</span>` : '');
+
+    const pmHtml = ad.methods.map(mKey => {
+      const pm = PAYMENT_METHODS[mKey];
+      return `<span class="pm-badge"><span class="pm-dot" style="background:${pm.color}"></span>${pm.short}</span>`;
+    }).join('');
+
+    const actionBtn = bookSide === 'BUY'
+      ? `<button class="btn btn-green" onclick="openTakerModal('${ad.id}')">Купить ${ad.coin}</button>`
+      : `<button class="btn btn-red" onclick="openTakerModal('${ad.id}')">Продать ${ad.coin}</button>`;
+
+    return `
+      <tr class="${rowClass}">
+        <td>
+          <div class="merchant-cell">
+            <div class="merchant-name-row">
+              <span class="avatar-circle">${ad.merchant[0]}</span>
+              <span>${ad.merchant}</span>
+              ${ad.verified ? '<span class="badge-verified" title="Проверенный мерчант">✔</span>' : ''}
+              ${badgeHtml}
+            </div>
+            <div class="merchant-stats">
+              ${ad.orders} ордеров | Выполнено: <span class="${rateClass}">${ad.rate}%</span>
+            </div>
+          </div>
+        </td>
+        <td class="price-cell">${ad.price.toLocaleString('ru-RU')} <small>RUB</small></td>
+        <td class="limits-cell">
+          <div><span>Доступно:</span><strong>${ad.availCoins} ${ad.coin}</strong></div>
+          <div><span>Лимиты:</span>${ad.minRub.toLocaleString('ru-RU')} – ${ad.maxRub.toLocaleString('ru-RU')} ₽</div>
+        </td>
+        <td><div class="pm-badges">${pmHtml}</div></td>
+        <td style="max-width:220px; font-size:12px; color:var(--text-secondary);">${ad.terms}</td>
+        <td style="text-align:right;">${actionBtn}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function updateBookMentorInsight(filtered) {
+  const box = document.getElementById('p2p-mentor-text');
+  const buyAds = orderBookAds.filter(a => a.coin === bookCoin && a.side === 'BUY' && !a.isTrap).sort((a, b) => a.price - b.price);
+  const sellAds = orderBookAds.filter(a => a.coin === bookCoin && a.side === 'SELL' && !a.isTrap).sort((a, b) => b.price - a.price);
+
+  const trapAd = filtered.find(a => a.isTrap);
+  const anomalyAd = filtered.find(a => a.isAnomaly);
+
+  let msg = '';
+  if (trapAd) {
+    msg += `⚠️ <strong>Осторожно:</strong> у <em>${trapAd.merchant}</em> курс выглядит заманчиво (${trapAd.price} ₽), но рейтинг выполнения всего <strong>${trapAd.rate}%</strong> и подозрительные условия («${trapAd.terms}»). Новички часто теряют деньги или время на таких объявлениях. `;
+  }
+  if (anomalyAd) {
+    msg += `🔥 <strong>Арбитражная аномалия:</strong> <em>${anomalyAd.merchant}</em> выставил ${bookCoin} по <strong>${anomalyAd.price} ₽</strong> — это заметно выгоднее рынка! Такие ордера быстро забирают. `;
+  }
+  if (buyAds.length && sellAds.length) {
+    const bestBuy = buyAds[0].price;
+    const bestSell = sellAds[0].price;
+    const rawSpread = ((bestSell - bestBuy) / bestBuy) * 100;
+    msg += `📊 Тейкер-стакан по <strong>${bookCoin}</strong>: лучшая покупка ${bestBuy} ₽, лучшая продажа ${bestSell} ₽ (спред Тейкер-Тейкер: <strong>${rawSpread.toFixed(2)}%</strong>). Чтобы забирать спред в плюс, вставайте в стакан <strong>Мейкером</strong>!`;
+  }
+  box.innerHTML = msg;
+}
+
+/* -------------------- TAKER ORDER MODAL -------------------- */
+function openTakerModal(adId) {
+  if (state.activeOrder) {
+    toast('У вас уже есть активный ордер! Завершите или отмените его перед открытием нового.', 'error');
+    switchView('view-order');
+    return;
+  }
+  const ad = orderBookAds.find(a => a.id === adId);
+  if (!ad) return;
+  selectedTakerAd = ad;
+
+  document.getElementById('mt-title').textContent = (ad.side === 'BUY' ? `Купить ${ad.coin}` : `Продать ${ad.coin}`) + ` у ${ad.merchant}`;
+  document.getElementById('mt-merchant-info').innerHTML = `
+    Курс: <strong style="color:var(--accent-yellow)">${ad.price} RUB</strong> • Рейтинг: <strong>${ad.rate}%</strong> (${ad.orders} сделок)<br>
+    Условия: <em>${ad.terms}</em>
+  `;
+
+  const pmSelect = document.getElementById('mt-pm-select');
+  pmSelect.innerHTML = ad.methods.map(m => {
+    const pm = PAYMENT_METHODS[m];
+    return `<option value="${m}">${pm.name} (Баланс: ${fmtRub(state.fiatWallets[m])}, комиссия ${pm.fee * 100}%)</option>`;
+  }).join('');
+
+  const defaultAmt = Math.min(ad.maxRub, Math.max(ad.minRub, 10000));
+  document.getElementById('mt-fiat-input').value = defaultAmt;
+  document.getElementById('mt-limits-hint').textContent = `Лимиты ордера: от ${ad.minRub.toLocaleString('ru-RU')} ₽ до ${ad.maxRub.toLocaleString('ru-RU')} ₽ (Доступно ${ad.availCoins} ${ad.coin})`;
+
+  const btn = document.getElementById('mt-confirm-btn');
+  btn.className = ad.side === 'BUY' ? 'btn btn-green' : 'btn btn-red';
+  btn.textContent = ad.side === 'BUY' ? `Купить ${ad.coin} (0% комиссия)` : `Продать ${ad.coin} (0% комиссия)`;
+
+  updateTakerModalCalc();
+  document.getElementById('modal-taker').classList.add('open');
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+function updateTakerModalCalc() {
+  if (!selectedTakerAd) return;
+  const ad = selectedTakerAd;
+  const fiat = parseFloat(document.getElementById('mt-fiat-input').value) || 0;
+  const pmKey = document.getElementById('mt-pm-select').value;
+  const pm = PAYMENT_METHODS[pmKey];
+  const coins = fiat / ad.price;
+  const pmFeeRub = fiat * pm.fee;
+
+  const summary = document.getElementById('mt-summary-box');
+  summary.innerHTML = `
+    <div class="calc-row"><span>Сумма сделки:</span><span>${fmtRub(fiat)}</span></div>
+    <div class="calc-row"><span>Комиссия Bybit (Тейкер):</span><span style="color:var(--green)">0.00 ${ad.coin} (0%)</span></div>
+    <div class="calc-row"><span>Комиссия платёжки (${pm.short}):</span><span>${fmtRub(pmFeeRub)} (${pm.fee * 100}%)</span></div>
+    <div class="calc-row total">
+      <span>${ad.side === 'BUY' ? 'Вы получите крипты:' : 'Вы отдадите крипты:'}</span>
+      <span style="color:var(--accent-yellow)">${fmtCoin(coins, ad.coin)}</span>
+    </div>
+  `;
+}
+
+function confirmTakeOrder() {
+  const ad = selectedTakerAd;
+  const fiat = parseFloat(document.getElementById('mt-fiat-input').value) || 0;
+  const pmKey = document.getElementById('mt-pm-select').value;
+  const pm = PAYMENT_METHODS[pmKey];
+
+  if (fiat < ad.minRub || fiat > ad.maxRub) {
+    toast(`Сумма должна быть в пределах лимитов: ${ad.minRub} – ${ad.maxRub} ₽`, 'error');
+    return;
+  }
+
+  const coins = Number((fiat / ad.price).toFixed(ad.coin === 'BTC' || ad.coin === 'ETH' ? 6 : 2));
+  if (coins > ad.availCoins) {
+    toast(`У контрагента недостаточно монет (макс. ${ad.availCoins} ${ad.coin})`, 'error');
+    return;
+  }
+
+  if (ad.side === 'BUY') {
+    const totalCost = fiat * (1 + pm.fee);
+    if (state.fiatWallets[pmKey] < totalCost) {
+      toast(`Недостаточно средств на балансе ${pm.name} (нужно ${fmtRub(totalCost)})`, 'error');
+      return;
+    }
+  } else {
+    if (state.cryptoWallets[ad.coin] < coins) {
+      toast(`Недостаточно ${ad.coin} на аккаунте финансирования (у вас ${fmtCoin(state.cryptoWallets[ad.coin], ad.coin)})`, 'error');
+      return;
+    }
+  }
+
+  closeModal('modal-taker');
+  startActiveOrder({
+    role: 'TAKER',
+    direction: ad.side, // 'BUY' = user buys crypto, 'SELL' = user sells crypto
+    coin: ad.coin,
+    price: ad.price,
+    fiatAmount: fiat,
+    cryptoGross: coins,
+    bybitFeeCoins: 0,
+    cryptoNet: coins,
+    pmKey,
+    counterparty: {
+      name: ad.merchant,
+      verified: ad.verified,
+      orders: ad.orders,
+      rate: ad.rate,
+      isTrap: ad.isTrap
+    }
+  });
+}
+
+/* -------------------- MAKER PANEL & SPREAD CALCULATOR -------------------- */
+function onMakerCoinChange() {
+  const coin = document.getElementById('maker-coin').value;
+  const base = getCoinBaseRubPrice(coin);
+  const dec = (coin === 'BTC' || coin === 'ETH') ? 0 : 2;
+  document.getElementById('maker-ref-price').textContent = `${base.toFixed(dec)} ₽`;
+  document.getElementById('maker-price').value = base.toFixed(dec);
+  document.getElementById('maker-amount').value = coin === 'BTC' ? 0.05 : (coin === 'ETH' ? 0.5 : 200);
+  updateMakerCalc();
+}
+
+function updateMakerCalc() {
+  const side = document.getElementById('maker-side').value;
+  const coin = document.getElementById('maker-coin').value;
+  const price = parseFloat(document.getElementById('maker-price').value) || 0;
+  const tier = getCurrentTier();
+
+  document.getElementById('mentor-maker-fee').textContent = (tier.makerBuyFee * 100).toFixed(3).replace(/\.?0+$/, '') + '%';
+  document.getElementById('calc-tier-rate').textContent = (tier.makerBuyFee * 100).toFixed(3).replace(/\.?0+$/, '') + '%';
+
+  if (side === 'BUY') {
+    document.getElementById('calc-buy-price').value = price;
+    document.getElementById('calc-buy-role').value = 'MAKER';
+  } else {
+    document.getElementById('calc-sell-price').value = price;
+    document.getElementById('calc-sell-role').value = 'MAKER';
+  }
+  recalcSpreadWidget();
+}
+
+function recalcSpreadWidget() {
+  const buyPrice = parseFloat(document.getElementById('calc-buy-price').value) || 0;
+  const sellPrice = parseFloat(document.getElementById('calc-sell-price').value) || 0;
+  const budget = parseFloat(document.getElementById('calc-budget').value) || 0;
+  const buyRole = document.getElementById('calc-buy-role').value;
+  const sellRole = document.getElementById('calc-sell-role').value;
+  const pmFeeRate = (parseFloat(document.getElementById('calc-pm-fee').value) || 0) / 100;
+  const tier = getCurrentTier();
+
+  const out = document.getElementById('spread-calc-output');
+  if (buyPrice <= 0 || sellPrice <= 0 || budget <= 0) {
+    out.innerHTML = '<div style="color:var(--text-secondary); font-size:12px;">Введите цены покупки и продажи для расчёта.</div>';
+    return;
+  }
+
+  const grossCoins = budget / buyPrice;
+  const buyFeeRate = buyRole === 'MAKER' ? tier.makerBuyFee : 0;
+  const netCoinsBought = grossCoins * (1 - buyFeeRate);
+
+  const sellFeeRate = sellRole === 'MAKER' ? 0 : 0; // Bybit P2P Maker sell = 0%, Taker = 0%
+  const netCoinsSold = netCoinsBought * (1 - sellFeeRate);
+  const grossRubReceived = netCoinsSold * sellPrice;
+
+  const pmFeeRub = budget * pmFeeRate;
+  const netProfitRub = grossRubReceived - budget - pmFeeRub;
+  const netSpreadPct = (netProfitRub / budget) * 100;
+  const isProfit = netProfitRub > 0;
+
+  out.innerHTML = `
+    <div class="calc-row"><span>Куплено монет (после ком. ${(buyFeeRate * 100).toFixed(2)}%):</span><span>${netCoinsBought.toFixed(4)}</span></div>
+    <div class="calc-row"><span>Выручка с продажи:</span><span>${fmtRub(grossRubReceived)}</span></div>
+    <div class="calc-row"><span>Комиссия платёжной системы:</span><span style="color:var(--red)">-${fmtRub(pmFeeRub)}</span></div>
+    <div class="calc-row total">
+      <span>Чистый итог круга:</span>
+      <span style="color:${isProfit ? 'var(--green)' : 'var(--red)'}">
+        ${isProfit ? '+' : ''}${fmtRub(netProfitRub)} (${isProfit ? '+' : ''}${netSpreadPct.toFixed(2)}%)
+      </span>
+    </div>
+    <div style="font-size:11.5px; margin-top:6px; color:${isProfit ? 'var(--green)' : 'var(--red)'}">
+      ${isProfit ? '✅ Связка плюсовая! Комиссии полностью перекрыты спредом.' : '❌ Убыток! Спред слишком узкий и съедается комиссиями.'}
+    </div>
+  `;
+}
+
+function publishMakerAd() {
+  const side = document.getElementById('maker-side').value;
+  const coin = document.getElementById('maker-coin').value;
+  const price = parseFloat(document.getElementById('maker-price').value) || 0;
+  const amount = parseFloat(document.getElementById('maker-amount').value) || 0;
+  const pmKey = document.getElementById('maker-payment').value;
+  const minRub = parseFloat(document.getElementById('maker-min').value) || 1000;
+  const maxRub = parseFloat(document.getElementById('maker-max').value) || 50000;
+  const terms = document.getElementById('maker-terms').value.trim();
+
+  if (price <= 0 || amount <= 0) {
+    toast('Укажите корректную цену и объём!', 'error');
+    return;
+  }
+
+  if (side === 'SELL' && state.cryptoWallets[coin] < amount) {
+    toast(`Для продажи нужно иметь ${fmtCoin(amount, coin)} на балансе финансирования!`, 'error');
+    return;
+  }
+
+  if (side === 'BUY' && state.fiatWallets[pmKey] < minRub) {
+    toast(`На балансе ${PAYMENT_METHODS[pmKey].name} должно быть хотя бы ${fmtRub(minRub)} для приёма заявок.`, 'error');
+    return;
+  }
+
+  const ad = {
+    id: 'MY-' + Math.random().toString(36).substring(2, 7).toUpperCase(),
+    side,
+    coin,
+    price,
+    amount,
+    pmKey,
+    minRub,
+    maxRub,
+    terms
+  };
+
+  state.myAds.push(ad);
+  saveState();
+  renderMyAds();
+  renderTopBars();
+  toast(`Объявление ${ad.id} опубликовано! Ожидайте откликов клиентов...`, 'success');
+}
+
+function removeMyAd(id) {
+  state.myAds = state.myAds.filter(a => a.id !== id);
+  saveState();
+  renderMyAds();
+  renderTopBars();
+}
+
+function renderMyAds() {
+  const container = document.getElementById('my-ads-list');
+  if (!state.myAds.length) {
+    container.innerHTML = `<p style="color:var(--text-secondary); text-align:center; padding:20px;">У вас пока нет активных объявлений.</p>`;
+    return;
+  }
+
+  container.innerHTML = state.myAds.map(ad => {
+    const base = getCoinBaseRubPrice(ad.coin);
+    const diffPct = ((ad.price - base) / base) * 100;
+    const isCompetitive = (ad.side === 'BUY' && diffPct >= -0.8) || (ad.side === 'SELL' && diffPct <= 1.2);
+
+    return `
+      <div style="background:var(--bg-input); border:1px solid var(--border-color); border-radius:var(--radius-sm); padding:12px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+        <div>
+          <span class="badge-tag ${ad.side === 'BUY' ? 'tag-hot' : 'tag-warn'}">${ad.side === 'BUY' ? 'СКУПКА (BUY)' : 'ПРОДАЖА (SELL)'}</span>
+          <strong style="margin-left:6px;">${ad.coin} по ${ad.price} ₽</strong>
+          <span style="font-size:12px; color:var(--text-secondary); margin-left:6px;">(${diffPct >= 0 ? '+' : ''}${diffPct.toFixed(2)}% к рынку)</span>
+          <div style="font-size:12px; color:var(--text-secondary); margin-top:4px;">
+            Объём: ${fmtCoin(ad.amount, ad.coin)} • Лимиты: ${ad.minRub}–${ad.maxRub} ₽ • Метод: ${PAYMENT_METHODS[ad.pmKey].name}
+          </div>
+          <div style="font-size:11.5px; margin-top:3px; color:${isCompetitive ? 'var(--green)' : 'var(--accent-yellow)'}">
+            ${isCompetitive ? '🟢 В рынке: клиенты скоро откликнутся' : '🟡 Курс далеко от рынка: отклики будут редкими'}
+          </div>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="removeMyAd('${ad.id}')">Снять</button>
+      </div>
+    `;
+  }).join('');
+}
+
+function simulateMakerResponses() {
+  if (state.activeOrder || !state.myAds.length) return;
+
+  for (const ad of state.myAds) {
+    const base = getCoinBaseRubPrice(ad.coin);
+    const diffPct = ((ad.price - base) / base) * 100;
+    // Probability depends on how attractive price is to takers
+    let prob = 0.25;
+    if (ad.side === 'BUY') {
+      if (diffPct >= 0) prob = 0.75;
+      else if (diffPct >= -0.6) prob = 0.45;
+      else prob = 0.1;
+    } else {
+      if (diffPct <= 0.2) prob = 0.75;
+      else if (diffPct <= 1.0) prob = 0.45;
+      else prob = 0.1;
+    }
+
+    if (Math.random() < prob) {
+      // Trigger incoming Taker order on user's Maker ad!
+      const maxAffordableFiat = ad.side === 'BUY'
+        ? Math.min(ad.maxRub, state.fiatWallets[ad.pmKey] * 0.98)
+        : Math.min(ad.maxRub, state.cryptoWallets[ad.coin] * ad.price);
+
+      if (maxAffordableFiat < ad.minRub) continue;
+
+      const fiatAmount = Math.round(ad.minRub + Math.random() * (maxAffordableFiat - ad.minRub));
+      const cryptoGross = Number((fiatAmount / ad.price).toFixed(ad.coin === 'BTC' || ad.coin === 'ETH' ? 6 : 2));
+      const tier = getCurrentTier();
+      const feeRate = ad.side === 'BUY' ? tier.makerBuyFee : 0;
+      const bybitFeeCoins = Number((cryptoGross * feeRate).toFixed(6));
+      const cryptoNet = Number((cryptoGross - bybitFeeCoins).toFixed(6));
+
+      const bot = BOT_PROFILES[Math.floor(Math.random() * BOT_PROFILES.length)];
+
+      toast(`🔔 <strong>Новый отклик на ваше объявление!</strong> Клиент ${bot.name} открыл ордер на ${fmtRub(fiatAmount)}.`, 'success');
+
+      startActiveOrder({
+        role: 'MAKER',
+        direction: ad.side, // 'BUY' = user buys crypto from taker; 'SELL' = user sells crypto to taker
+        coin: ad.coin,
+        price: ad.price,
+        fiatAmount,
+        cryptoGross,
+        bybitFeeCoins,
+        cryptoNet,
+        pmKey: ad.pmKey,
+        counterparty: {
+          name: bot.name,
+          verified: bot.verified,
+          orders: bot.orders,
+          rate: bot.rate,
+          isTrap: false
+        }
+      });
+
+      // Deduct volume from maker ad
+      ad.amount = Number(Math.max(0, ad.amount - cryptoGross).toFixed(6));
+      if (ad.amount <= 0.0001) {
+        state.myAds = state.myAds.filter(a => a.id !== ad.id);
+      }
+      saveState();
+      renderMyAds();
+      break;
+    }
+  }
+}
+
+/* -------------------- ACTIVE ORDER, ESCROW, SCAMS & CHAT ENGINE -------------------- */
+const SCENARIOS = [
+  'POLITE_NORMAL',
+  'POLITE_NORMAL',
+  'NEWBIE_CONFUSED',
+  'SCAM_FAKE_RECEIPT',
+  'SCAM_THIRD_PARTY',
+  'SCAM_TELEGRAM_LURE',
+  'SCAM_CANCEL_AFTER_PAY'
+];
+
+function startActiveOrder(cfg) {
+  // Pick realistic scenario
+  let scenario = 'POLITE_NORMAL';
+  if (cfg.counterparty.isTrap) {
+    scenario = Math.random() > 0.5 ? 'SCAM_TELEGRAM_LURE' : 'SCAM_FAKE_RECEIPT';
+  } else {
+    // If user is on Quest 4, boost scam encounter chance so they can practice catching it
+    if (state.questIndex === 3 && Math.random() < 0.75) {
+      scenario = cfg.direction === 'SELL' ? 'SCAM_FAKE_RECEIPT' : 'SCAM_CANCEL_AFTER_PAY';
+    } else {
+      const pool = cfg.direction === 'SELL'
+        ? ['POLITE_NORMAL', 'POLITE_NORMAL', 'NEWBIE_CONFUSED', 'SCAM_FAKE_RECEIPT', 'SCAM_THIRD_PARTY', 'SCAM_TELEGRAM_LURE']
+        : ['POLITE_NORMAL', 'POLITE_NORMAL', 'NEWBIE_CONFUSED', 'SCAM_CANCEL_AFTER_PAY', 'SCAM_TELEGRAM_LURE'];
+      scenario = pool[Math.floor(Math.random() * pool.length)];
+    }
+  }
+
+  // Freeze crypto in Escrow immediately!
+  // If user is SELLING crypto, freeze user's crypto. If user is BUYING crypto, counterparty's crypto is frozen by Bybit.
+  if (cfg.direction === 'SELL') {
+    state.cryptoWallets[cfg.coin] = Number((state.cryptoWallets[cfg.coin] - cfg.cryptoGross).toFixed(6));
+  }
+
+  const order = {
+    id: 'BYB-' + Math.floor(100000 + Math.random() * 900000),
+    role: cfg.role,
+    direction: cfg.direction, // 'BUY' (user receives crypto, pays fiat) | 'SELL' (user sends crypto, receives fiat)
+    coin: cfg.coin,
+    price: cfg.price,
+    fiatAmount: cfg.fiatAmount,
+    cryptoGross: cfg.cryptoGross,
+    bybitFeeCoins: cfg.bybitFeeCoins,
+    cryptoNet: cfg.cryptoNet,
+    pmKey: cfg.pmKey,
+    counterparty: cfg.counterparty,
+    scenario,
+    status: 'PENDING_PAYMENT', // PENDING_PAYMENT -> PAID_NOTIFIED -> COMPLETED / CANCELLED / APPEAL
+    timeLeftSec: 900,
+    timerSpeed: 1,
+    fiatSentByUser: false,
+    fiatActuallyArrivedToUser: false,
+    senderNameInBank: cfg.counterparty.name,
+    walletChecked: false,
+    fakeReceiptSent: false,
+    appealFiled: false,
+    messages: []
+  };
+
+  state.activeOrder = order;
+
+  addChatMessage(order, 'system', `Ордер ${order.id} создан. ${fmtCoin(order.cryptoGross, order.coin)} заблокированы на эскроу-счёте Bybit.`);
+
+  // Initial counterparty greeting
+  setTimeout(() => {
+    if (!state.activeOrder || state.activeOrder.id !== order.id) return;
+    triggerInitialBotMessage(order);
+  }, 900);
+
+  saveState();
+  renderAll();
+  switchView('view-order');
+  startOrderTimerLoop();
+}
+
+function triggerInitialBotMessage(order) {
+  if (order.direction === 'BUY') {
+    // User is paying fiat
+    if (order.scenario === 'SCAM_TELEGRAM_LURE') {
+      addChatMessage(order, 'counterparty', `Привет! У меня банк тупит, напиши срочно в Telegram @bybit_support_obmen, скину туда резервные реквизиты.`);
+    } else if (order.scenario === 'NEWBIE_CONFUSED') {
+      addChatMessage(order, 'counterparty', `Здравствуйте! Я первый раз продаю тут, реквизиты в карточке сверху правильные, переводите.`);
+    } else {
+      addChatMessage(order, 'counterparty', `Доброго времени суток! Реквизиты актуальны. Как переведёте — нажмите кнопку оплаты.`);
+    }
+  } else {
+    // User is selling crypto, counterparty must pay fiat to user
+    if (order.scenario === 'SCAM_TELEGRAM_LURE') {
+      addChatMessage(order, 'counterparty', `Салам! Давай в WhatsApp/TG перейдём, у меня скрин оплаты сюда не грузится.`);
+    } else if (order.scenario === 'NEWBIE_CONFUSED') {
+      addChatMessage(order, 'counterparty', `Привет, а куда жать чтобы оплатить? Просто по номеру перевести и нажать "Оплачено"?`);
+    } else {
+      addChatMessage(order, 'counterparty', `Здравствуйте! Сейчас оплачу по указанным реквизитам. Ожидайте 1-2 минуты.`);
+    }
+
+    // Schedule bot payment action
+    setTimeout(() => {
+      if (!state.activeOrder || state.activeOrder.id !== order.id || order.status !== 'PENDING_PAYMENT') return;
+      simulateCounterpartyPayment(order);
+    }, 5500);
+  }
+}
+
+function simulateCounterpartyPayment(order) {
+  order.status = 'PAID_NOTIFIED';
+
+  if (order.scenario === 'SCAM_FAKE_RECEIPT') {
+    order.fiatActuallyArrivedToUser = false;
+    order.fakeReceiptSent = true;
+    addChatMessage(order, 'counterparty', `Всё перевёл! Вот чек, у меня поезд через 3 минуты, отпускай крипту быстрее!!`, {
+      receipt: {
+        status: 'ИСПОЛНЕНО (PDF-чек)',
+        amount: fmtRub(order.fiatAmount),
+        sender: order.counterparty.name,
+        note: 'Поступление в выписке банка НЕ зафиксировано!'
+      }
+    });
+  } else if (order.scenario === 'SCAM_THIRD_PARTY') {
+    // Money actually arrives, BUT from a completely different person (triangle scheme!)
+    order.fiatActuallyArrivedToUser = true;
+    order.senderNameInBank = 'Иванов Пётр Сергеевич (3-е лицо!)';
+    state.fiatWallets[order.pmKey] += order.fiatAmount;
+    addChatMessage(order, 'counterparty', `Оплатил с карты брата, у меня лимит кончился. Отпускай монеты, деньги же пришли!`);
+  } else if (order.scenario === 'SCAM_TELEGRAM_LURE') {
+    order.fiatActuallyArrivedToUser = false;
+    addChatMessage(order, 'counterparty', `Я нажал оплачено, чек скинул тебе в ТГ, проверяй и отпускай!`);
+  } else {
+    // Honest payment!
+    order.fiatActuallyArrivedToUser = true;
+    order.senderNameInBank = order.counterparty.name;
+    state.fiatWallets[order.pmKey] += order.fiatAmount;
+    addChatMessage(order, 'counterparty', `Перевод отправил (${fmtRub(order.fiatAmount)}). Проверьте пожалуйста баланс и отпустите ${order.coin}.`);
+  }
+
+  addChatMessage(order, 'system', `Контрагент отметил ордер как оплаченный. Проверьте фактическое поступление средств на баланс платёжной системы!`);
+  saveState();
+  renderActiveOrderView();
+}
+
+function addChatMessage(order, sender, text, extra = {}) {
+  const now = new Date();
+  const timeStr = now.toTimeString().slice(0, 5);
+  order.messages.push({ sender, text, time: timeStr, extra });
+  if (state.activeOrder && state.activeOrder.id === order.id) {
+    renderChatMessages();
+  }
+}
+
+function sendQuickChat(text) {
+  document.getElementById('chat-input').value = text;
+  sendUserChat();
+}
+
+function sendUserChat() {
+  const order = state.activeOrder;
+  if (!order) return;
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text) return;
+
+  input.value = '';
+  addChatMessage(order, 'me', text);
+  saveState();
+
+  // Bot contextual reply
+  setTimeout(() => {
+    if (!state.activeOrder || state.activeOrder.id !== order.id) return;
+    const low = text.toLowerCase();
+    if (low.includes('тг') || low.includes('telegram') || low.includes('чат')) {
+      if (order.scenario === 'SCAM_TELEGRAM_LURE') {
+        addChatMessage(order, 'counterparty', `Да ладно тебе, все так делают, там удобнее...`);
+      } else {
+        addChatMessage(order, 'counterparty', `Полностью согласен, работаем строго внутри чата Bybit.`);
+      }
+    } else if (low.includes('треть') || low.includes('фио') || low.includes('владельц')) {
+      if (order.scenario === 'SCAM_THIRD_PARTY') {
+        addChatMessage(order, 'counterparty', `Какая разница от кого пришли деньги, главное что на балансе есть! Отпускай!`);
+      } else {
+        addChatMessage(order, 'counterparty', `Да, конечно, отправка строго со своего верифицированного аккаунта.`);
+      }
+    } else if (low.includes('не поступ') || low.includes('нет денег') || low.includes('баланс')) {
+      if (order.scenario === 'SCAM_FAKE_RECEIPT') {
+        addChatMessage(order, 'counterparty', `Межбанк иногда до 3 дней идёт, я же тебе скрин скинул! Не задерживай меня!`);
+      } else {
+        addChatMessage(order, 'counterparty', `Понял, ожидаю, отпишите как отобразится.`);
+      }
+    } else {
+      addChatMessage(order, 'counterparty', `Принято, спасибо за оперативность.`);
+    }
+    saveState();
+  }, 1100);
+}
+
+/* -------------------- ORDER USER ACTIONS -------------------- */
+function actionTransferFiat() {
+  const order = state.activeOrder;
+  if (!order || order.direction !== 'BUY' || order.fiatSentByUser) return;
+
+  const pm = PAYMENT_METHODS[order.pmKey];
+  const totalDebit = order.fiatAmount * (1 + pm.fee);
+  if (state.fiatWallets[order.pmKey] < totalDebit) {
+    toast(`Недостаточно средств на ${pm.name}!`, 'error');
+    return;
+  }
+
+  state.fiatWallets[order.pmKey] = Number((state.fiatWallets[order.pmKey] - totalDebit).toFixed(2));
+  order.fiatSentByUser = true;
+  addChatMessage(order, 'system', `Вы перевели ${fmtRub(order.fiatAmount)} (комиссия платёжки ${fmtRub(order.fiatAmount * pm.fee)}) со счёта ${pm.name}. Теперь нажмите «Оплачено, уведомить продавца».`);
+  saveState();
+  renderAll();
+}
+
+function actionNotifyPaid() {
+  const order = state.activeOrder;
+  if (!order || order.direction !== 'BUY') return;
+
+  if (!order.fiatSentByUser) {
+    toast('Сначала выполните перевод средств по реквизитам!', 'error');
+    return;
+  }
+
+  order.status = 'PAID_NOTIFIED';
+  addChatMessage(order, 'system', `Вы отметили ордер как оплаченный. Ожидаем подтверждения от продавца ${order.counterparty.name}.`);
+  saveState();
+  renderActiveOrderView();
+
+  // Counterparty reaction
+  setTimeout(() => {
+    if (!state.activeOrder || state.activeOrder.id !== order.id) return;
+
+    if (order.scenario === 'SCAM_CANCEL_AFTER_PAY') {
+      addChatMessage(order, 'counterparty', `Слушай, у меня карта заблокировалась, я не могу принять платёж. Нажми пожалуйста «Отменить ордер», а я тебе деньги потом обратно скину!`);
+      saveState();
+      renderActiveOrderView();
+    } else {
+      addChatMessage(order, 'counterparty', `Вижу поступление! Спасибо за быструю сделку, отпускаю ${order.coin}.`);
+      setTimeout(() => {
+        if (state.activeOrder && state.activeOrder.id === order.id) {
+          completeOrderSuccess();
+        }
+      }, 1800);
+    }
+  }, 2800);
+}
+
+function checkPaymentWallet() {
+  const order = state.activeOrder;
+  if (!order) return;
+  order.walletChecked = true;
+  const pm = PAYMENT_METHODS[order.pmKey];
+  const logEl = document.getElementById('bank-tx-log');
+  logEl.style.display = 'block';
+
+  if (order.direction === 'SELL') {
+    if (order.fiatActuallyArrivedToUser) {
+      const isThirdParty = order.scenario === 'SCAM_THIRD_PARTY';
+      logEl.innerHTML = `
+        <div style="padding:8px; border-radius:4px; background:${isThirdParty ? 'var(--red-dim)' : 'var(--green-dim)'}; color:${isThirdParty ? 'var(--red)' : 'var(--green)'};">
+          ✅ Входящий перевод: +${fmtRub(order.fiatAmount)} на ${pm.name}<br>
+          👤 Отправитель по выписке: <strong>${order.senderNameInBank}</strong><br>
+          ${isThirdParty ? '⚠️ ВНИМАНИЕ: Имя отправителя НЕ совпадает с аккаунтом Bybit (' + order.counterparty.name + ')! Это признак «треугольника»!' : '✔ Имя отправителя полностью совпадает с аккаунтом Bybit.'}
+        </div>
+      `;
+    } else {
+      logEl.innerHTML = `
+        <div style="padding:8px; border-radius:4px; background:var(--red-dim); color:var(--red);">
+          ❌ Новых поступлений на сумму ${fmtRub(order.fiatAmount)} в системе ${pm.name} НЕ ОБНАРУЖЕНО! Баланс не изменился.
+        </div>
+      `;
+    }
+  } else {
+    logEl.innerHTML = `
+      <div style="padding:8px; border-radius:4px; background:var(--blue-dim); color:#93c5fd;">
+        ℹ️ Статус исходящего перевода: ${order.fiatSentByUser ? `Списано ${fmtRub(order.fiatAmount)} с ${pm.name}` : 'Перевод ещё не отправлен'}.
+      </div>
+    `;
+  }
+  saveState();
+}
+
+function actionReleaseCrypto() {
+  const order = state.activeOrder;
+  if (!order || order.direction !== 'SELL') return;
+
+  // Check if user fell into a scam trap!
+  if (!order.fiatActuallyArrivedToUser) {
+    recordMistake(
+      'Отпуск криптовалюты без фактического получения денег',
+      `Вы нажали «Отпустить криптовалюту» в ордере ${order.id}, поверив сообщению/фейковому чеку от ${order.counterparty.name}, хотя на баланс ${PAYMENT_METHODS[order.pmKey].name} деньги не поступали! Эскроу разблокирован, мошенник ушёл с вашими ${fmtCoin(order.cryptoGross, order.coin)}.`,
+      order.fiatAmount
+    );
+    finishOrderAsLoss('Мошенник получил вашу крипту без оплаты!');
+    return;
+  }
+
+  if (order.scenario === 'SCAM_THIRD_PARTY') {
+    recordMistake(
+      'Приём платежа от третьего лица («Треугольник»)',
+      `Деньги (${fmtRub(order.fiatAmount)}) пришли от "${order.senderNameInBank}", а не от "${order.counterparty.name}". В реальности жертва мошенника подаст заявление в банк/полицию на ваш счёт за неосновательное обогащение, и карту заблокируют по 115-ФЗ/161-ФЗ.`,
+      Math.round(order.fiatAmount * 0.5)
+    );
+    // Deduct frozen/disputed bank clawback
+    state.fiatWallets[order.pmKey] = Math.max(0, state.fiatWallets[order.pmKey] - order.fiatAmount);
+    finishOrderAsLoss('Платёж от 3-го лица оспорен банком жертвы! Средства списаны, крипта потеряна.');
+    return;
+  }
+
+  // Legitimate release!
+  completeOrderSuccess();
+}
+
+function actionCancelOrder() {
+  const order = state.activeOrder;
+  if (!order) return;
+
+  if (order.direction === 'BUY' && order.fiatSentByUser) {
+    recordMistake(
+      'Отмена ордера ПОСЛЕ перевода фиата продавцу',
+      `Вы перевели ${fmtRub(order.fiatAmount)} продавцу ${order.counterparty.name}, а затем нажали «Отменить ордер» по его просьбе. Как только ордер отменён, эскроу Bybit возвращает криптовалюту продавцу, а ваши деньги остаются у него!`,
+      order.fiatAmount
+    );
+    finishOrderAsLoss('Ордер отменён после оплаты — продавец оставил себе и деньги, и крипту!');
+    return;
+  }
+
+  // Safe cancellation before payment
+  if (order.direction === 'SELL') {
+    // Unfreeze user's crypto back to wallet
+    state.cryptoWallets[order.coin] = Number((state.cryptoWallets[order.coin] + order.cryptoGross).toFixed(6));
+  }
+  state.history.unshift({
+    time: new Date().toLocaleTimeString(),
+    type: 'ОТМЕНА P2P',
+    details: `Ордер ${order.id} (${order.direction} ${order.coin}) отменён без потерь`,
+    pnl: 0
+  });
+  state.activeOrder = null;
+  saveState();
+  renderAll();
+  toast('Ордер отменён, монеты возвращены из эскроу.', 'info');
+}
+
+function actionFileAppeal() {
+  const order = state.activeOrder;
+  if (!order) return;
+
+  addChatMessage(order, 'system', '⚖️ Вы подали апелляцию. Арбитр Bybit P2P подключился к чату и проверяет банковские выписки и историю переписки...');
+
+  setTimeout(() => {
+    if (!state.activeOrder || state.activeOrder.id !== order.id) return;
+
+    const isLegitScam =
+      order.scenario === 'SCAM_FAKE_RECEIPT' ||
+      order.scenario === 'SCAM_THIRD_PARTY' ||
+      order.scenario === 'SCAM_TELEGRAM_LURE' ||
+      order.scenario === 'SCAM_CANCEL_AFTER_PAY';
+
+    if (isLegitScam) {
+      // User wins the appeal!
+      if (order.direction === 'SELL') {
+        // Return user's escrowed crypto; if 3rd party fiat arrived, return it back
+        state.cryptoWallets[order.coin] = Number((state.cryptoWallets[order.coin] + order.cryptoGross).toFixed(6));
+        if (order.fiatActuallyArrivedToUser) {
+          state.fiatWallets[order.pmKey] = Math.max(0, state.fiatWallets[order.pmKey] - order.fiatAmount);
+        }
+      } else if (order.direction === 'BUY' && order.fiatSentByUser) {
+        // Arbiter force-releases seller's escrowed crypto to user!
+        state.cryptoWallets[order.coin] = Number((state.cryptoWallets[order.coin] + order.cryptoNet).toFixed(6));
+      }
+
+      state.stats.scamsCaught++;
+      state.history.unshift({
+        time: new Date().toLocaleTimeString(),
+        type: 'АПЕЛЛЯЦИЯ ВЫИГРАНА',
+        details: `Разоблачён сценарий (${order.scenario}) против ${order.counterparty.name}`,
+        pnl: 0
+      });
+      state.activeOrder = null;
+      saveState();
+      renderAll();
+      toast('🏆 <strong>Апелляция выиграна!</strong> Арбитр Bybit встал на вашу сторону и заблокировал нарушителя.', 'success');
+      checkQuestProgress('APPEAL_WON');
+    } else {
+      // False appeal on an honest counterparty
+      recordMistake(
+        'Необоснованная апелляция против добросовестного контрагента',
+        `Контрагент ${order.counterparty.name} действовал строго по правилам Bybit. Ложные апелляции снижают ваш рейтинг доверия.`,
+        0
+      );
+      if (order.direction === 'SELL' && order.fiatActuallyArrivedToUser) {
+        completeOrderSuccess();
+      } else {
+        actionCancelOrder();
+      }
+    }
+  }, 2200);
+}
+
+function completeOrderSuccess() {
+  const order = state.activeOrder;
+  if (!order) return;
+
+  if (order.direction === 'BUY') {
+    state.cryptoWallets[order.coin] = Number((state.cryptoWallets[order.coin] + order.cryptoNet).toFixed(6));
+    if (order.coin !== 'USDT') {
+      state.stats.boughtNonUsdtP2P = true;
+    }
+  }
+  // Note: if direction === 'SELL', fiat was already added when counterparty paid, and crypto was frozen at start
+
+  state.stats.completedOrders++;
+  state.stats.totalVolumeRub += order.fiatAmount;
+
+  const netWorthNow = calcTotalNetWorthRub();
+  state.stats.realizedPnlRub = netWorthNow - state.initialNetWorthRub;
+
+  const feeInfo = order.bybitFeeCoins > 0 ? ` (комиссия мейкера ${fmtCoin(order.bybitFeeCoins, order.coin)})` : ' (0% ком.)';
+  state.history.unshift({
+    time: new Date().toLocaleTimeString(),
+    type: `${order.role} ${order.direction === 'BUY' ? 'ПОКУПКА' : 'ПРОДАЖА'}`,
+    details: `${fmtCoin(order.cryptoNet, order.coin)} по ${order.price} ₽${feeInfo}`,
+    pnl: state.stats.realizedPnlRub
+  });
+
+  state.activeOrder = null;
+  saveState();
+  renderAll();
+  toast(`✅ Сделка ${order.id} успешно завершена!`, 'success');
+
+  // Quest triggers
+  if (order.role === 'TAKER' && order.direction === 'BUY' && order.coin === 'USDT') {
+    checkQuestProgress('TAKER_BUY_USDT_SUCCESS');
+  }
+  if (order.role === 'MAKER') {
+    checkQuestProgress('MAKER_ORDER_SUCCESS');
+  }
+  if (order.direction === 'SELL' && order.coin === 'USDT') {
+    checkQuestProgress('SOLD_USDT_P2P');
+  }
+}
+
+function finishOrderAsLoss(reason) {
+  const order = state.activeOrder;
+  state.history.unshift({
+    time: new Date().toLocaleTimeString(),
+    type: 'ПОТЕРЯ В СДЕЛКЕ',
+    details: `${order.id}: ${reason}`,
+    pnl: -order.fiatAmount
+  });
+  state.activeOrder = null;
+  saveState();
+  renderAll();
+  toast(`🚨 <strong>Потеря средств!</strong> ${reason} Подробный разбор в «Кошелёк и P&L».`, 'error');
+}
+
+function recordMistake(title, explanation, lossRub) {
+  state.stats.mistakesCount++;
+  state.mistakes.unshift({
+    time: new Date().toLocaleTimeString(),
+    title,
+    explanation,
+    lossRub
+  });
+}
+
+/* -------------------- ORDER TIMER LOOP -------------------- */
+function setTimerSpeed(speed) {
+  if (!state.activeOrder) return;
+  state.activeOrder.timerSpeed = speed;
+  document.querySelectorAll('.speed-btn').forEach(b => b.classList.toggle('active', Number(b.dataset.speed) === speed));
+}
+
+function startOrderTimerLoop() {
+  if (timerInterval) clearInterval(timerInterval);
+  timerInterval = setInterval(() => {
+    const order = state.activeOrder;
+    if (!order || order.timerSpeed === 0) return;
+
+    order.timeLeftSec -= order.timerSpeed;
+    if (order.timeLeftSec <= 0) {
+      order.timeLeftSec = 0;
+      clearInterval(timerInterval);
+      toast('⏰ Время ордера истекло! Ордер автоматически отменён.', 'error');
+      actionCancelOrder();
+      return;
+    }
+    const mins = Math.floor(order.timeLeftSec / 60);
+    const secs = order.timeLeftSec % 60;
+    const disp = document.getElementById('order-timer-display');
+    if (disp) disp.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  }, 1000);
+}
+
+function renderActiveOrderView() {
+  const emptyBox = document.getElementById('no-active-order-state');
+  const workBox = document.getElementById('active-order-workspace');
+  const order = state.activeOrder;
+
+  if (!order) {
+    emptyBox.style.display = 'block';
+    workBox.style.display = 'none';
+    return;
+  }
+
+  emptyBox.style.display = 'none';
+  workBox.style.display = 'block';
+
+  const badge = document.getElementById('ao-direction-badge');
+  badge.textContent = `${order.role === 'MAKER' ? 'МЕЙКЕР' : 'ТЕЙКЕР'} • ${order.direction === 'BUY' ? 'ПОКУПКА' : 'ПРОДАЖА'} ${order.coin}`;
+  badge.className = `badge-tag ${order.direction === 'BUY' ? 'tag-hot' : 'tag-warn'}`;
+
+  document.getElementById('ao-id').textContent = `#${order.id}`;
+  document.getElementById('ao-cp-name').textContent = order.counterparty.name + (order.counterparty.verified ? ' ✔' : '');
+  document.getElementById('ao-cp-stats').textContent = `${order.counterparty.orders} орд. / ${order.counterparty.rate}%`;
+
+  document.getElementById('ao-fiat-amount').textContent = fmtRub(order.fiatAmount);
+  document.getElementById('ao-price').textContent = `${order.price} ₽`;
+  document.getElementById('ao-crypto-amount').textContent = fmtCoin(order.cryptoNet, order.coin) + (order.bybitFeeCoins > 0 ? ` (-${order.bybitFeeCoins})` : '');
+
+  const pm = PAYMENT_METHODS[order.pmKey];
+  document.getElementById('ao-pm-name').textContent = pm.name;
+  document.getElementById('ao-pm-fee').textContent = `${pm.fee * 100}%`;
+  document.getElementById('check-pm-label').textContent = pm.name;
+
+  document.getElementById('ao-requisites-details').innerHTML = order.direction === 'BUY'
+    ? `Получатель: <strong>${order.counterparty.name}</strong><br>Счёт / Кошелёк (${pm.short}): <code>${pm.id}-8842-9910-4412</code><br>Ваш баланс ${pm.short}: <strong>${fmtRub(state.fiatWallets[order.pmKey])}</strong>`
+    : `Ваши реквизиты (${pm.short}): <code>${pm.id}-MY-ACC-7701</code><br>Ожидаемый отправитель: <strong>${order.counterparty.name}</strong><br>Текущий баланс ${pm.short}: <strong>${fmtRub(state.fiatWallets[order.pmKey])}</strong>`;
+
+  // Action buttons based on direction & state
+  const btnBar = document.getElementById('order-action-buttons');
+  if (order.direction === 'BUY') {
+    btnBar.innerHTML = `
+      <button class="btn btn-yellow" ${order.fiatSentByUser ? 'disabled' : ''} onclick="actionTransferFiat()">1. Перевести деньги (${fmtRub(order.fiatAmount)})</button>
+      <button class="btn btn-green" ${(!order.fiatSentByUser || order.status === 'PAID_NOTIFIED') ? 'disabled' : ''} onclick="actionNotifyPaid()">2. Оплачено, уведомить продавца</button>
+      <button class="btn btn-ghost" onclick="actionCancelOrder()">Отменить ордер</button>
+      <button class="btn btn-red" onclick="actionFileAppeal()">⚖️ Подать апелляцию (Спор)</button>
+    `;
+    document.getElementById('order-mentor-tip-text').innerHTML =
+      'Сначала нажмите «Перевести деньги», затем «Оплачено». <strong>Никогда не отменяйте ордер после того, как перевели деньги</strong>, даже если продавец просит об этом в чате!';
+  } else {
+    btnBar.innerHTML = `
+      <button class="btn btn-green" ${order.status !== 'PAID_NOTIFIED' ? 'disabled' : ''} onclick="actionReleaseCrypto()">Отпустить криптовалюту (${fmtCoin(order.cryptoGross, order.coin)})</button>
+      <button class="btn btn-ghost" onclick="actionCancelOrder()">Отменить ордер</button>
+      <button class="btn btn-red" onclick="actionFileAppeal()">⚖️ Подать апелляцию (Спор)</button>
+    `;
+    document.getElementById('order-mentor-tip-text').innerHTML =
+      'Перед тем как нажать «Отпустить криптовалюту», обязательно нажмите <strong>«Проверить баланс платёжки»</strong> и убедитесь, что: 1) деньги реально зачислены на баланс; 2) отправитель совпадает с ником контрагента.';
+  }
+
+  renderChatMessages();
+}
+
+function renderChatMessages() {
+  const order = state.activeOrder;
+  if (!order) return;
+  const box = document.getElementById('chat-messages-box');
+  box.innerHTML = order.messages.map(m => {
+    let receiptHtml = '';
+    if (m.extra && m.extra.receipt) {
+      const r = m.extra.receipt;
+      receiptHtml = `
+        <div class="fake-receipt-card">
+          <div>📄 <strong>КВИТАНЦИЯ ОБ ОПЕРАЦИИ</strong></div>
+          <div>Статус: ${r.status}</div>
+          <div>Сумма: ${r.amount}</div>
+          <div>Отправитель: ${r.sender}</div>
+        </div>
+      `;
+    }
+    return `
+      <div class="msg ${m.sender}">
+        <div>${m.text}</div>
+        ${receiptHtml}
+        <span class="msg-time">${m.time}</span>
+      </div>
+    `;
+  }).join('');
+  box.scrollTop = box.scrollHeight;
+}
+
+/* -------------------- SPOT MARKET ENGINE -------------------- */
+function renderSpotView() {
+  const tickers = document.getElementById('spot-tickers-grid');
+  tickers.innerHTML = ['BTC', 'ETH', 'USDC'].map(c => {
+    const pUsdt = state.spotPricesUsdt[c];
+    const pRub = getCoinBaseRubPrice(c);
+    return `
+      <div class="wallet-tile">
+        <div class="wt-name"><strong>${c} / USDT</strong><span style="color:var(--green)">Спот</span></div>
+        <div class="wt-bal">${pUsdt.toLocaleString('en-US')} USDT</div>
+        <div class="wt-sub">≈ ${fmtRub(pRub)}</div>
+      </div>
+    `;
+  }).join('');
+
+  updateSpotPreview();
+  renderSpotArbScanner();
+}
+
+function fillMaxSpot() {
+  const fromCoin = document.getElementById('spot-from-coin').value;
+  document.getElementById('spot-from-amount').value = state.cryptoWallets[fromCoin];
+  updateSpotPreview();
+}
+
+function updateSpotPreview() {
+  const fromCoin = document.getElementById('spot-from-coin').value;
+  const toCoin = document.getElementById('spot-to-coin').value;
+  const amt = parseFloat(document.getElementById('spot-from-amount').value) || 0;
+
+  document.getElementById('spot-avail-bal').textContent = fmtCoin(state.cryptoWallets[fromCoin], fromCoin);
+
+  if (fromCoin === toCoin || amt <= 0) {
+    document.getElementById('spot-to-amount').value = '0';
+    document.getElementById('spot-fee-preview').textContent = '0';
+    return;
+  }
+
+  const fromUsdtVal = amt * state.spotPricesUsdt[fromCoin];
+  const feeUsdt = fromUsdtVal * 0.001; // 0.1% spot fee
+  const netUsdt = fromUsdtVal - feeUsdt;
+  const toAmt = netUsdt / state.spotPricesUsdt[toCoin];
+
+  document.getElementById('spot-to-amount').value = fmtCoin(toAmt, toCoin);
+  document.getElementById('spot-fee-preview').textContent = `${feeUsdt.toFixed(4)} USDT (0.1%)`;
+}
+
+function executeSpotTrade() {
+  const fromCoin = document.getElementById('spot-from-coin').value;
+  const toCoin = document.getElementById('spot-to-coin').value;
+  const amt = parseFloat(document.getElementById('spot-from-amount').value) || 0;
+
+  if (fromCoin === toCoin) {
+    toast('Выберите разные монеты для обмена!', 'error');
+    return;
+  }
+  if (amt <= 0 || state.cryptoWallets[fromCoin] < amt) {
+    toast(`Недостаточно ${fromCoin} на балансе финансирования!`, 'error');
+    return;
+  }
+
+  const fromUsdtVal = amt * state.spotPricesUsdt[fromCoin];
+  const netUsdt = fromUsdtVal * 0.999; // 0.1% fee
+  const toAmt = Number((netUsdt / state.spotPricesUsdt[toCoin]).toFixed(6));
+
+  state.cryptoWallets[fromCoin] = Number((state.cryptoWallets[fromCoin] - amt).toFixed(6));
+  state.cryptoWallets[toCoin] = Number((state.cryptoWallets[toCoin] + toAmt).toFixed(6));
+  state.stats.spotTradesCount++;
+
+  if (toCoin === 'USDT' && (fromCoin === 'BTC' || fromCoin === 'ETH')) {
+    state.stats.convertedToUsdtSpot = true;
+  }
+
+  state.history.unshift({
+    time: new Date().toLocaleTimeString(),
+    type: 'СПОТ ОБМЕН',
+    details: `${fmtCoin(amt, fromCoin)} → ${fmtCoin(toAmt, toCoin)} (комиссия 0.1%)`,
+    pnl: calcTotalNetWorthRub() - state.initialNetWorthRub
+  });
+
+  document.getElementById('spot-from-amount').value = '';
+  saveState();
+  renderAll();
+  renderSpotView();
+  toast(`🔄 Обмен выполнен: получено ${fmtCoin(toAmt, toCoin)}`, 'success');
+}
+
+function renderSpotArbScanner() {
+  const scanner = document.getElementById('spot-arb-scanner');
+  const bestUsdtSellAds = orderBookAds.filter(a => a.coin === 'USDT' && a.side === 'SELL' && !a.isTrap).sort((a, b) => b.price - a.price);
+  const usdtSellPrice = bestUsdtSellAds.length ? bestUsdtSellAds[0].price : state.baseUsdtRub;
+
+  const rows = ['BTC', 'ETH', 'USDC'].map(c => {
+    const buyAds = orderBookAds.filter(a => a.coin === c && a.side === 'BUY' && !a.isTrap).sort((a, b) => a.price - b.price);
+    if (!buyAds.length) return '';
+    const p2pBuyRub = buyAds[0].price;
+    // If we buy 10,000 RUB of coin C on P2P, convert to USDT on Spot (-0.1%), and sell USDT on P2P:
+    const coins = 10000 / p2pBuyRub;
+    const usdtOut = coins * state.spotPricesUsdt[c] * 0.999;
+    const rubOut = usdtOut * usdtSellPrice;
+    const diffPct = ((rubOut - 10000) / 10000) * 100;
+
+    return `
+      <div style="background:var(--bg-input); border:1px solid var(--border-color); border-radius:6px; padding:10px; margin-bottom:8px;">
+        <div style="display:flex; justify-content:space-between; font-weight:700;">
+          <span>P2P ${c} → Спот USDT → P2P</span>
+          <span style="color:${diffPct > 0 ? 'var(--green)' : 'var(--text-secondary)'}">${diffPct >= 0 ? '+' : ''}${diffPct.toFixed(2)}%</span>
+        </div>
+        <div style="font-size:11.5px; color:var(--text-secondary); margin-top:4px;">
+          Покупка ${c}: ${p2pBuyRub} ₽ • Продажа USDT: ${usdtSellPrice} ₽
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  scanner.innerHTML = rows;
+}
+
+/* -------------------- WALLET & ANALYTICS VIEW -------------------- */
+function renderWalletView() {
+  const fiatGrid = document.getElementById('fiat-wallets-grid');
+  fiatGrid.innerHTML = Object.keys(PAYMENT_METHODS).map(k => {
+    const pm = PAYMENT_METHODS[k];
+    return `
+      <div class="wallet-tile">
+        <div class="wt-name">
+          <span><span class="pm-dot" style="background:${pm.color}; display:inline-block; margin-right:5px;"></span>${pm.name}</span>
+          <span>ком. ${pm.fee * 100}%</span>
+        </div>
+        <div class="wt-bal">${fmtRub(state.fiatWallets[k])}</div>
+        <div class="wt-sub">Доступный фиат</div>
+      </div>
+    `;
+  }).join('');
+
+  const cryptoGrid = document.getElementById('crypto-wallets-grid');
+  cryptoGrid.innerHTML = COINS.map(c => {
+    const bal = state.cryptoWallets[c];
+    const rubEq = bal * getCoinBaseRubPrice(c);
+    return `
+      <div class="wallet-tile">
+        <div class="wt-name"><strong>${c}</strong><span>Funding</span></div>
+        <div class="wt-bal">${fmtCoin(bal, c)}</div>
+        <div class="wt-sub">≈ ${fmtRub(rubEq)}</div>
+      </div>
+    `;
+  }).join('');
+
+  const tier = getCurrentTier();
+  const netPnl = calcTotalNetWorthRub() - state.initialNetWorthRub;
+  document.getElementById('stats-summary-grid').innerHTML = `
+    <div class="wallet-tile">
+      <div class="wt-name">Успешных сделок / Оборот</div>
+      <div class="wt-bal">${state.stats.completedOrders} орд.</div>
+      <div class="wt-sub">Оборот: ${fmtRub(state.stats.totalVolumeRub)}</div>
+    </div>
+    <div class="wallet-tile">
+      <div class="wt-name">Статус аккаунта Bybit</div>
+      <div class="wt-bal" style="color:var(--accent-yellow); font-size:15px;">${tier.name}</div>
+      <div class="wt-sub">Мейкер-покупка: ${(tier.makerBuyFee * 100).toFixed(3).replace(/\.?0+$/, '')}%</div>
+    </div>
+    <div class="wallet-tile">
+      <div class="wt-name">Безопасность и P&L</div>
+      <div class="wt-bal" style="color:${netPnl >= 0 ? 'var(--green)' : 'var(--red)'}">${netPnl >= 0 ? '+' : ''}${fmtRub(netPnl)}</div>
+      <div class="wt-sub">Поймано мошенников: ${state.stats.scamsCaught} • Ошибок: ${state.stats.mistakesCount}</div>
+    </div>
+  `;
+
+  const histEl = document.getElementById('trade-history-list');
+  histEl.innerHTML = state.history.length
+    ? state.history.map(h => `
+        <div style="padding:9px 10px; border-bottom:1px solid var(--border-color); font-size:12.5px; display:flex; justify-content:space-between; gap:10px;">
+          <div>
+            <strong style="color:var(--accent-yellow)">[${h.time}] ${h.type}:</strong> ${h.details}
+          </div>
+        </div>
+      `).join('')
+    : '<p style="color:var(--text-secondary); padding:15px; text-align:center;">История операций пока пуста.</p>';
+
+  const misEl = document.getElementById('mistakes-log-list');
+  misEl.innerHTML = state.mistakes.length
+    ? state.mistakes.map(m => `
+        <div style="background:var(--red-dim); border:1px solid rgba(246,70,93,0.35); border-radius:6px; padding:10px; margin-bottom:8px;">
+          <div style="font-weight:700; color:var(--red);">[${m.time}] ${m.title} ${m.lossRub > 0 ? `(-${fmtRub(m.lossRub)})` : ''}</div>
+          <div style="font-size:12px; color:#f1c4cb; margin-top:4px;">${m.explanation}</div>
+        </div>
+      `).join('')
+    : '<p style="color:var(--green); padding:15px; text-align:center;">🎉 Ошибок пока нет! Продолжайте соблюдать риск-менеджмент.</p>';
+}
+
+/* -------------------- ACADEMY KNOWLEDGE BASE -------------------- */
+const ACADEMY_TOPICS = {
+  basics: `
+    <h3>1. Как устроен P2P и механизм Эскроу (Escrow)</h3>
+    <p><strong>P2P (Peer-to-Peer)</strong> — это площадка прямого обмена между людьми, где биржа Bybit выступает гарантом сделки.</p>
+    <h4>Как работает Эскроу:</h4>
+    <ul>
+      <li>Когда открывается ордер на продажу или покупку, криптовалюта продавца <strong>мгновенно замораживается</strong> на специальном счёте биржи Bybit.</li>
+      <li>Продавец не может отменить сделку в одностороннем порядке или вывести эти монеты, пока покупатель оплачивает заказ.</li>
+      <li>Криптовалюта переходит покупателю только в двух случаях: либо продавец нажимает <em>«Отпустить монеты»</em> после получения денег, либо арбитр Bybit принудительно переводит их после проверки доказательств в апелляции.</li>
+    </ul>
+  `,
+  maker_taker: `
+    <h3>2. Мейкер vs Тейкер и реальные комиссии Bybit</h3>
+    <p>Понимание разницы между ролями — ключ к прибыльному арбитражу:</p>
+    <ul>
+      <li><strong>Тейкер (Taker)</strong> — вы нажимаете «Купить» или «Продать» по готовому чужому объявлению из стакана. Комиссия биржи Bybit для тейкера составляет <strong>0%</strong>, но вы торгуете по чужой, менее выгодной цене.</li>
+      <li><strong>Мейкер (Maker)</strong> — вы сами размещаете объявление в стакане и ждёте, пока на него откликнутся. Вы сами задаёте спред!</li>
+    </ul>
+    <h4>Комиссии Мейкера на Bybit (для RUB):</h4>
+    <ul>
+      <li>Размещение объявления на <strong>покупку</strong> криптовалюты: <strong>0.3%</strong> (для обычного аккаунта), <strong>0.275%</strong> (Проверенный мерчант) и <strong>0.25%</strong> (Блокчейн-мерчант).</li>
+      <li>Размещение объявления на <strong>продажу</strong> криптовалюты: <strong>0%</strong>.</li>
+      <li><strong>Важно:</strong> всегда закладывайте эти 0.3% в расчёт спреда, иначе кажущаяся прибыль в +0.25% обернётся убытком!</li>
+    </ul>
+  `,
+  arbitrage: `
+    <h3>3. Внутрибиржевой и Спот-арбитраж</h3>
+    <p><strong>Классический P2P-круг:</strong> вы встаёте Мейкером на закупку USDT за RUB по нижнему краю стакана (например, через СБП), а затем встаёте Мейкером на продажу USDT по верхнему краю стакана (например, на ЮMoney или Payeer, где спрос выше). Разница минус комиссии — ваш чистый доход.</p>
+    <h4>Связка «P2P → Спот → P2P»:</h4>
+    <ul>
+      <li>Иногда продавцы на P2P выставляют <strong>BTC или ETH</strong> с дисконтом к биржевому курсу, потому что им срочно нужен фиат.</li>
+      <li>Вы покупаете BTC/ETH на P2P, переводите на Единый торговый аккаунт, продаёте за <strong>USDT на Спотовом рынке</strong> (комиссия 0.1%) и продаёте USDT в P2P.</li>
+    </ul>
+  `,
+  scams: `
+    <h3>4. Главные схемы мошенников на P2P</h3>
+    <ul>
+      <li><strong>Фейковый чек / Фотошоп:</strong> мошенник присылает красивую PDF-квитанцию в чат и торопит («у меня поезд/самолёт, быстрее отпускай!»). <em>Защита:</em> верить только фактическому зачислению на баланс вашего кошелька/банка, никогда не верить картинкам в чате.</li>
+      <li><strong>«Треугольник» (Оплата от 3-го лица):</strong> мошенник находит на Авито/другом сайте жертву, даёт ей ваши реквизиты, жертва переводит вам деньги, а мошенник забирает вашу крипту. Позже жертва идёт в полицию/банк, и ваш счёт блокируют. <em>Защита:</em> сверять имя отправителя в выписке с именем аккаунта Bybit. При несовпадении — не отпускать крипту и открывать апелляцию.</li>
+      <li><strong>Увод в Telegram / WhatsApp:</strong> злоумышленник зовёт в мессенджер, чтобы прислать фейковое письмо якобы от техподдержки Bybit. <em>Защита:</em> 100% переписки только внутри чата Bybit.</li>
+      <li><strong>Просьба отменить ордер после вашей оплаты:</strong> вы перевели деньги, а продавец просит «отмени ордер, у меня карта заблокировалась, я верну». Если вы отмените, эскроу вернёт крипту продавцу. <em>Защита:</em> никогда не отменять оплаченный ордер, сразу подавать апелляцию.</li>
+    </ul>
+  `,
+  appeals: `
+    <h3>5. Как выигрывать апелляции (Споры)</h3>
+    <p>Апелляция — это арбитраж службы поддержки Bybit. Чтобы победить в споре:</p>
+    <ul>
+      <li>Никогда не покидайте чат биржи — арбитры читают только переписку внутри ордера.</li>
+      <li>Если вы продавец и деньги не пришли или пришли от третьего лица — <strong>не нажимайте «Отпустить криптовалюту»</strong> и жмите <em>«Подать апелляцию»</em>.</li>
+      <li>Если вы покупатель и честно перевели деньги, но продавец не отпускает монеты — не отменяйте ордер, подавайте апелляцию и прикладывайте выписку.</li>
+    </ul>
+  `
+};
+
+document.querySelectorAll('#academy-menu .academy-item').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#academy-menu .academy-item').forEach(b => b.classList.toggle('active', b === btn));
+    renderAcademyTopic(btn.dataset.topic);
+  });
+});
+
+function renderAcademyTopic(topic) {
+  document.getElementById('academy-content-box').innerHTML = ACADEMY_TOPICS[topic] || ACADEMY_TOPICS.basics;
+}
+
+/* -------------------- ONBOARDING TUTORIAL -------------------- */
+const ONBOARDING_STEPS = [
+  {
+    title: 'Шаг 1 из 4: Ваша цель и стартовый капитал',
+    body: `<p>Вы находитесь в профессиональном симуляторе P2P-трейдинга и арбитража на бирже <strong>Bybit</strong>.</p>
+           <p>Вам выдан стартовый капитал в размере <strong>100 000 ₽</strong>, распределённый по виртуальным платёжным системам (СБП, ЮMoney, Payeer, Volet, Подарочные коды), а также базовый крипто-резерв на аккаунте финансирования.</p>
+           <p>Ваша задача — научиться безопасно покупать и продавать криптовалюту, ловить спреды, зарабатывать на разнице курсов и не попадаться на уловки мошенников.</p>`
+  },
+  {
+    title: 'Шаг 2 из 4: Роли Тейкера и Мейкера',
+    body: `<p>В разделе <strong>«P2P Стакан»</strong> вы выступаете как <strong>Тейкер</strong> — откликаетесь на готовые объявления с комиссией <strong>0%</strong>.</p>
+           <p>В разделе <strong>«Мои объявления»</strong> вы выступаете как <strong>Мейкер</strong> — сами выставляете свой курс и ждёте клиентов. Помните: на Bybit комиссия мейкера при покупке крипты за RUB составляет <strong>0.3%</strong> (снижается до 0.25% с ростом статуса), а при продаже — <strong>0%</strong>.</p>`
+  },
+  {
+    title: 'Шаг 3 из 4: Безопасность и Эскроу',
+    body: `<p>Во время сделки криптовалюта замораживается биржей в <strong>Эскроу</strong>.</p>
+           <p>В чате сделки вам будут попадаться не только обычные клиенты, но и <strong>мошенники</strong>: с фейковыми чеками, оплатой от 3-х лиц («треугольник»), попытками увести в Telegram и просьбами отменить оплаченный ордер. Всегда нажимайте <strong>«Проверить баланс платёжки»</strong> перед отпуском монет!</p>`
+  },
+  {
+    title: 'Шаг 4 из 4: Режим Ментора и Квесты',
+    body: `<p>В правом верхнем углу есть переключатель <strong>«Ментор: ВКЛ/ВЫКЛ»</strong>. Когда он включён, система анализирует стакан, подсказывает спреды и объясняет термины при наведении курсора.</p>
+           <p>Следуйте цепочке из <strong>4 учебных квестов</strong> в верхней панели, чтобы пройти путь от первой сделки до профи-арбитражника!</p>`
+  }
+];
+
+function openOnboarding() {
+  onboardingStep = 0;
+  renderOnboardingStep();
+  document.getElementById('modal-onboarding').classList.add('open');
+}
+
+function stepOnboarding(dir) {
+  onboardingStep += dir;
+  if (onboardingStep >= ONBOARDING_STEPS.length) {
+    state.onboardingDone = true;
+    saveState();
+    closeModal('modal-onboarding');
+    return;
+  }
+  if (onboardingStep < 0) onboardingStep = 0;
+  renderOnboardingStep();
+}
+
+function renderOnboardingStep() {
+  const s = ONBOARDING_STEPS[onboardingStep];
+  document.getElementById('onboarding-step-content').innerHTML = `<h4 style="color:var(--accent-yellow); margin-bottom:10px;">${s.title}</h4>${s.body}`;
+  document.getElementById('onboarding-step-indicator').textContent = `Шаг ${onboardingStep + 1} из ${ONBOARDING_STEPS.length}`;
+  document.getElementById('ob-prev-btn').style.visibility = onboardingStep === 0 ? 'hidden' : 'visible';
+  document.getElementById('ob-next-btn').textContent = onboardingStep === ONBOARDING_STEPS.length - 1 ? 'Начать торговлю 🚀' : 'Далее →';
+}
+
+/* -------------------- MENTOR HOVER TOOLTIPS -------------------- */
+const tooltipEl = document.getElementById('mentor-tooltip');
+document.addEventListener('mouseover', e => {
+  if (!state.mentorMode) return;
+  const target = e.target.closest('[data-tip]');
+  if (!target) {
+    tooltipEl.style.display = 'none';
+    return;
+  }
+  tooltipEl.innerHTML = `<strong>💡 Подсказка Ментора</strong>${target.dataset.tip}`;
+  tooltipEl.style.display = 'block';
+});
+
+document.addEventListener('mousemove', e => {
+  if (tooltipEl.style.display === 'block') {
+    const x = Math.min(window.innerWidth - 330, e.clientX + 14);
+    const y = Math.min(window.innerHeight - 120, e.clientY + 14);
+    tooltipEl.style.left = x + 'px';
+    tooltipEl.style.top = y + 'px';
+  }
+});
+
+/* -------------------- INITIALIZATION -------------------- */
+function renderAll() {
+  syncMentorModeUI();
+  renderTopBars();
+  renderOrderBook();
+  renderMyAds();
+  renderActiveOrderView();
+  renderWalletView();
+}
+
+generateInitialOrderBook();
+renderAcademyTopic('basics');
+renderAll();
+
+if (!state.onboardingDone) {
+  openOnboarding();
+}
+
+if (state.activeOrder) {
+  startOrderTimerLoop();
+}
+
+// Live market heartbeat every 7 seconds
+marketInterval = setInterval(() => {
+  tickMarket(false);
+}, 7000);
+</script>
+</body>
+</html>
